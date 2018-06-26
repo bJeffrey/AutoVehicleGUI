@@ -15,12 +15,15 @@ import javax.swing.JLabel;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 
+import tcpClient.TCPClient;
+
 import java.awt.Font;
 import javax.swing.LayoutStyle.ComponentPlacement;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.IOException;
 
 public class MainFrame {
 
@@ -57,7 +60,7 @@ public class MainFrame {
 		frame = new JFrame();
 		frame.getContentPane().setFont(new Font("Tahoma", Font.PLAIN, 12));
 		frame.setBackground(Color.LIGHT_GRAY);
-		frame.getContentPane().setBackground(Color.WHITE);
+		frame.getContentPane().setBackground(new Color(245, 245, 245));
 		
 		JLabel lbllabelexample = new JLabel("label example");
 		lbllabelexample.setHorizontalAlignment(SwingConstants.CENTER);
@@ -74,7 +77,14 @@ public class MainFrame {
 		btnSearch.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent arg0) {
-				String HOST = txtVehicleIp.getText();
+				//String HOST = txtVehicleIp.getText();
+				TCPClient client = new TCPClient("www.google.com", 80);
+				try {
+					client.connect();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 		});
 
