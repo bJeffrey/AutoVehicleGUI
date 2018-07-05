@@ -33,6 +33,8 @@ public class MainFrame {
 
 	private JFrame frame;
 	private JTextField txtVehicleIp;
+	protected TCPClient client;
+	protected boolean connected;
 
 	/**
 	 * Launch the application.
@@ -66,6 +68,36 @@ public class MainFrame {
 		frame.setBackground(Color.LIGHT_GRAY);
 		frame.getContentPane().setBackground(new Color(245, 245, 245));
 		
+		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+		    public void run() {
+		    	//If we connected to the tcp server, close the socket
+		    	if (connected == true) {
+		        	System.out.println("Closing socket");
+		        	client.closeSocket();
+		        }
+		        else {
+		        	System.out.println("Exiting...");
+		        }
+
+		    }
+		}));
+		
+
+		try {
+			client = new TCPClient();
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		
+		JLabel lblMultiThreadResults = new JLabel("Multi-thread Results");
+		lblMultiThreadResults.setOpaque(true);
+		lblMultiThreadResults.setHorizontalAlignment(SwingConstants.CENTER);
+		lblMultiThreadResults.setFont(new Font("Tahoma", Font.BOLD, 10));
+		lblMultiThreadResults.setBorder(BorderFactory.createLineBorder(Color.BLACK, 1, true));
+		lblMultiThreadResults.setBackground(Color.LIGHT_GRAY);
+
+		
 		class Consumers implements Runnable {
 
 			protected BlockingQueue queue = null;
@@ -86,7 +118,7 @@ public class MainFrame {
 
 							public void run() {
 								try {
-									lblNewMultithreadTest.setText("Consumed: " + queue.take());
+									lblMultiThreadResults.setText("Consumed: " + queue.take());
 								} catch (InterruptedException e) {
 									// TODO Auto-generated catch block
 									e.printStackTrace();
@@ -193,18 +225,6 @@ public class MainFrame {
 		}
 		
 		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
 		JLabel lbllabelexample = new JLabel("label example");
 		lbllabelexample.setHorizontalAlignment(SwingConstants.CENTER);
 		lbllabelexample.setFont(new Font("Tahoma", Font.BOLD, 10));
@@ -217,33 +237,97 @@ public class MainFrame {
 		txtVehicleIp.setColumns(10);
 		
 		JButton btnSearch = new JButton("Search");
+		btnSearch.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+			}
+		});
 		btnSearch.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent arg0) {
-				//String HOST = txtVehicleIp.getText();
-				TCPClient client = new TCPClient("www.google.com", 80);
+				String HOST = txtVehicleIp.getText();
+				
 				try {
-					client.connect();
+					//TCPClient client = new TCPClient("www.google.com", 80);
+					//TCPClient client = new TCPClient();
+					connected = client.connect(HOST, 5006);
+					//client.sendTestTCPMessage();
+					//client.sendTCPMessage("Hello from the client");
+					//client.closeSocket();
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
+				
 			}
 		});
 
 		JButton btnFwd = new JButton("fwd");
+		btnFwd.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent e) {
+				//Send the move forward command
+				try {
+					System.out.println("Sending 'forward' command");
+					client.sendTCPMessage("forward");
+				} catch(IOException f) {
+					f.printStackTrace();
+				}
+			}
+		});
 		btnFwd.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 			}
 		});
 		
 		JButton btnLeft = new JButton("left");
+		btnLeft.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				//Send the move left command
+				try {
+					System.out.println("Sending 'left' command");
+					client.sendTCPMessage("left");
+				} catch(IOException f) {
+					f.printStackTrace();
+				}
+			
+			}
+		});
 		
 		JButton btnRight = new JButton("right");
+		btnRight.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				//Send the move right command
+				try {
+					System.out.println("Sending 'right' command");
+					client.sendTCPMessage("right");
+				} catch(IOException f) {
+					f.printStackTrace();
+				}
+			
+			}
+		});
 		
 		JButton btnBack = new JButton("back");
+		btnBack.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent e) {
+				//Send the move backward command
+				try {
+					System.out.println("Sending 'backward' command");
+					client.sendTCPMessage("backward");
+				} catch(IOException f) {
+					f.printStackTrace();
+				}
+			}
+		});
 		
 		JButton btnMultiThreadTest = new JButton("Multi-Thread Test");
+		btnMultiThreadTest.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+			}
+		});
 		btnMultiThreadTest.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent arg0) {
@@ -253,65 +337,80 @@ public class MainFrame {
 			}
 		});
 		
-		JLabel lblMultiThreadResults = new JLabel("Multi-thread Results");
-		lblMultiThreadResults.setOpaque(true);
-		lblMultiThreadResults.setHorizontalAlignment(SwingConstants.CENTER);
-		lblMultiThreadResults.setFont(new Font("Tahoma", Font.BOLD, 10));
-		lblMultiThreadResults.setBorder(BorderFactory.createLineBorder(Color.BLACK, 1, true));
-		lblMultiThreadResults.setBackground(Color.LIGHT_GRAY);
+		JButton btnCenter = new JButton("center");
+		btnCenter.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				//Send the move forward command
+				try {
+					System.out.println("Sending 'home' command");
+					client.sendTCPMessage("home");
+				} catch(IOException f) {
+					f.printStackTrace();
+				}
+			}
+		});
+		
+
 		GroupLayout groupLayout = new GroupLayout(frame.getContentPane());
 		groupLayout.setHorizontalGroup(
 			groupLayout.createParallelGroup(Alignment.TRAILING)
 				.addGroup(groupLayout.createSequentialGroup()
-					.addContainerGap(629, Short.MAX_VALUE)
-					.addComponent(btnBack)
-					.addGap(302))
-				.addGroup(groupLayout.createSequentialGroup()
-					.addGap(601)
-					.addGroup(groupLayout.createParallelGroup(Alignment.TRAILING)
-						.addComponent(lblMultiThreadResults, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 264, Short.MAX_VALUE)
-						.addGroup(Alignment.LEADING, groupLayout.createSequentialGroup()
+					.addGap(619)
+					.addComponent(btnLeft)
+					.addPreferredGap(ComponentPlacement.UNRELATED)
+					.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
+						.addComponent(lblMultiThreadResults, GroupLayout.DEFAULT_SIZE, 248, Short.MAX_VALUE)
+						.addGroup(groupLayout.createSequentialGroup()
 							.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
 								.addGroup(groupLayout.createSequentialGroup()
-									.addPreferredGap(ComponentPlacement.RELATED)
-									.addComponent(btnLeft)
-									.addPreferredGap(ComponentPlacement.UNRELATED)
-									.addComponent(btnRight))
+									.addGap(10)
+									.addComponent(btnFwd))
 								.addGroup(groupLayout.createSequentialGroup()
-									.addGap(28)
-									.addComponent(btnFwd)))
-							.addPreferredGap(ComponentPlacement.RELATED, 32, Short.MAX_VALUE)
+									.addPreferredGap(ComponentPlacement.RELATED)
+									.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
+										.addGroup(groupLayout.createSequentialGroup()
+											.addGap(10)
+											.addComponent(btnBack))
+										.addGroup(groupLayout.createSequentialGroup()
+											.addComponent(btnCenter, GroupLayout.PREFERRED_SIZE, 74, GroupLayout.PREFERRED_SIZE)
+											.addPreferredGap(ComponentPlacement.UNRELATED)
+											.addComponent(btnRight)))))
+							.addPreferredGap(ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
 							.addComponent(lbllabelexample, GroupLayout.PREFERRED_SIZE, 122, GroupLayout.PREFERRED_SIZE))
-						.addGroup(Alignment.LEADING, groupLayout.createSequentialGroup()
-							.addComponent(txtVehicleIp, GroupLayout.DEFAULT_SIZE, 138, Short.MAX_VALUE)
+						.addGroup(groupLayout.createSequentialGroup()
+							.addComponent(txtVehicleIp, GroupLayout.DEFAULT_SIZE, 122, Short.MAX_VALUE)
 							.addGap(18)
 							.addComponent(btnSearch, GroupLayout.PREFERRED_SIZE, 108, GroupLayout.PREFERRED_SIZE)))
 					.addGap(119))
 				.addGroup(groupLayout.createSequentialGroup()
-					.addContainerGap(665, Short.MAX_VALUE)
+					.addContainerGap(724, Short.MAX_VALUE)
 					.addComponent(btnMultiThreadTest, GroupLayout.PREFERRED_SIZE, 140, GroupLayout.PREFERRED_SIZE)
 					.addGap(179))
 		);
 		groupLayout.setVerticalGroup(
 			groupLayout.createParallelGroup(Alignment.LEADING)
 				.addGroup(groupLayout.createSequentialGroup()
-					.addGap(350)
-					.addComponent(btnMultiThreadTest, GroupLayout.PREFERRED_SIZE, 35, GroupLayout.PREFERRED_SIZE)
-					.addGap(18)
-					.addComponent(lblMultiThreadResults, GroupLayout.PREFERRED_SIZE, 40, GroupLayout.PREFERRED_SIZE)
-					.addGap(15)
-					.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE)
-						.addComponent(btnSearch, GroupLayout.PREFERRED_SIZE, 35, GroupLayout.PREFERRED_SIZE)
-						.addComponent(txtVehicleIp, GroupLayout.PREFERRED_SIZE, 36, GroupLayout.PREFERRED_SIZE))
-					.addGap(18)
-					.addGroup(groupLayout.createParallelGroup(Alignment.TRAILING)
-						.addComponent(lbllabelexample, GroupLayout.PREFERRED_SIZE, 40, GroupLayout.PREFERRED_SIZE)
+					.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
 						.addGroup(groupLayout.createSequentialGroup()
-							.addComponent(btnFwd)
-							.addPreferredGap(ComponentPlacement.RELATED)
+							.addGap(350)
+							.addComponent(btnMultiThreadTest, GroupLayout.PREFERRED_SIZE, 35, GroupLayout.PREFERRED_SIZE)
+							.addGap(18)
+							.addComponent(lblMultiThreadResults, GroupLayout.PREFERRED_SIZE, 40, GroupLayout.PREFERRED_SIZE)
+							.addGap(15)
 							.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE)
-								.addComponent(btnRight)
-								.addComponent(btnLeft))))
+								.addComponent(btnSearch, GroupLayout.PREFERRED_SIZE, 35, GroupLayout.PREFERRED_SIZE)
+								.addComponent(txtVehicleIp, GroupLayout.PREFERRED_SIZE, 36, GroupLayout.PREFERRED_SIZE))
+							.addGap(26)
+							.addGroup(groupLayout.createParallelGroup(Alignment.TRAILING)
+								.addComponent(lbllabelexample, GroupLayout.PREFERRED_SIZE, 40, GroupLayout.PREFERRED_SIZE)
+								.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE)
+									.addComponent(btnRight)
+									.addComponent(btnCenter)
+									.addComponent(btnLeft))))
+						.addGroup(groupLayout.createSequentialGroup()
+							.addGap(512)
+							.addComponent(btnFwd)))
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(btnBack)
 					.addContainerGap(74, Short.MAX_VALUE))
