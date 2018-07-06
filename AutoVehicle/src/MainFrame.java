@@ -28,11 +28,13 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import javax.swing.JSlider;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.ChangeEvent;
 
 public class MainFrame {
 
 	private JFrame frame;
-	private JTextField txtVehicleIp;
 	protected TCPClient client;
 	protected boolean connected;
 
@@ -225,34 +227,31 @@ public class MainFrame {
 		}
 		
 		
-		JLabel lbllabelexample = new JLabel("label example");
-		lbllabelexample.setHorizontalAlignment(SwingConstants.CENTER);
-		lbllabelexample.setFont(new Font("Tahoma", Font.BOLD, 10));
-		lbllabelexample.setOpaque(true);
-		lbllabelexample.setBackground(Color.LIGHT_GRAY);
-		lbllabelexample.setBorder(BorderFactory.createLineBorder(Color.BLACK, 1, true));
-
-		txtVehicleIp = new JTextField();
-		txtVehicleIp.setText("Vehicle IP");
-		txtVehicleIp.setColumns(10);
+		JLabel lblConnected = new JLabel("Vehicle Not Connected");
+		lblConnected.setHorizontalAlignment(SwingConstants.CENTER);
+		lblConnected.setFont(new Font("Tahoma", Font.BOLD, 10));
+		lblConnected.setOpaque(true);
+		lblConnected.setBackground(Color.LIGHT_GRAY);
+		lblConnected.setBorder(BorderFactory.createLineBorder(Color.BLACK, 1, true));
 		
-		JButton btnSearch = new JButton("Search");
-		btnSearch.addActionListener(new ActionListener() {
+		JButton btnConnectToVehicle = new JButton("Connect to Vehicle");
+		btnConnectToVehicle.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 			}
 		});
-		btnSearch.addMouseListener(new MouseAdapter() {
+		btnConnectToVehicle.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent arg0) {
-				String HOST = txtVehicleIp.getText();
+				String HOST = "192.168.2.6";
 				
 				try {
 					//TCPClient client = new TCPClient("www.google.com", 80);
 					//TCPClient client = new TCPClient();
-					connected = client.connect(HOST, 5006);
+					connected = client.connect(HOST, 21567);//vehicle is at host 192.168.2.6, port 21567
 					//client.sendTestTCPMessage();
 					//client.sendTCPMessage("Hello from the client");
 					//client.closeSocket();
+					lblConnected.setText("Vehicle Connected");
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -269,6 +268,16 @@ public class MainFrame {
 				try {
 					System.out.println("Sending 'forward' command");
 					client.sendTCPMessage("forward");
+				} catch(IOException f) {
+					f.printStackTrace();
+				}
+			}
+			@Override
+			public void mouseReleased(MouseEvent e) {
+				//Send the stop command
+				try {
+					System.out.println("Sending 'stop' command");
+					client.sendTCPMessage("stop");
 				} catch(IOException f) {
 					f.printStackTrace();
 				}
@@ -321,6 +330,17 @@ public class MainFrame {
 					f.printStackTrace();
 				}
 			}
+			@Override
+			public void mouseReleased(MouseEvent e) {
+				//Send the stop command
+				try {
+					System.out.println("Sending 'stop' command");
+					client.sendTCPMessage("stop");
+				} catch(IOException f) {
+					f.printStackTrace();
+				}
+
+			}
 		});
 		
 		JButton btnMultiThreadTest = new JButton("Multi-Thread Test");
@@ -351,69 +371,87 @@ public class MainFrame {
 			}
 		});
 		
+		JSlider slider = new JSlider();
+		slider.addChangeListener(new ChangeListener() {
+			public void stateChanged(ChangeEvent arg0) {
+				String speed = Integer.toString(slider.getValue());
+				
+				System.out.println("Setting Speed to " + speed);
+				try {
+					client.sendTCPMessage(speed);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		});
+		
 
 		GroupLayout groupLayout = new GroupLayout(frame.getContentPane());
 		groupLayout.setHorizontalGroup(
-			groupLayout.createParallelGroup(Alignment.TRAILING)
+			groupLayout.createParallelGroup(Alignment.LEADING)
 				.addGroup(groupLayout.createSequentialGroup()
-					.addGap(619)
-					.addComponent(btnLeft)
-					.addPreferredGap(ComponentPlacement.UNRELATED)
-					.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
-						.addComponent(lblMultiThreadResults, GroupLayout.DEFAULT_SIZE, 248, Short.MAX_VALUE)
+					.addContainerGap(576, Short.MAX_VALUE)
+					.addComponent(slider, GroupLayout.PREFERRED_SIZE, 111, GroupLayout.PREFERRED_SIZE)
+					.addGap(297))
+				.addGroup(Alignment.TRAILING, groupLayout.createSequentialGroup()
+					.addContainerGap(733, Short.MAX_VALUE)
+					.addComponent(btnMultiThreadTest, GroupLayout.PREFERRED_SIZE, 140, GroupLayout.PREFERRED_SIZE)
+					.addGap(111))
+				.addGroup(Alignment.TRAILING, groupLayout.createSequentialGroup()
+					.addGap(697)
+					.addComponent(lblMultiThreadResults, GroupLayout.DEFAULT_SIZE, 206, Short.MAX_VALUE)
+					.addGap(81))
+				.addGroup(groupLayout.createSequentialGroup()
+					.addGap(627)
+					.addGroup(groupLayout.createParallelGroup(Alignment.LEADING, false)
 						.addGroup(groupLayout.createSequentialGroup()
-							.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
+							.addComponent(btnLeft)
+							.addPreferredGap(ComponentPlacement.RELATED)
+							.addGroup(groupLayout.createParallelGroup(Alignment.LEADING, false)
 								.addGroup(groupLayout.createSequentialGroup()
 									.addGap(10)
-									.addComponent(btnFwd))
+									.addComponent(btnBack)
+									.addContainerGap())
 								.addGroup(groupLayout.createSequentialGroup()
-									.addPreferredGap(ComponentPlacement.RELATED)
 									.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
 										.addGroup(groupLayout.createSequentialGroup()
 											.addGap(10)
-											.addComponent(btnBack))
+											.addComponent(btnFwd))
 										.addGroup(groupLayout.createSequentialGroup()
 											.addComponent(btnCenter, GroupLayout.PREFERRED_SIZE, 74, GroupLayout.PREFERRED_SIZE)
 											.addPreferredGap(ComponentPlacement.UNRELATED)
-											.addComponent(btnRight)))))
-							.addPreferredGap(ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-							.addComponent(lbllabelexample, GroupLayout.PREFERRED_SIZE, 122, GroupLayout.PREFERRED_SIZE))
-						.addGroup(groupLayout.createSequentialGroup()
-							.addComponent(txtVehicleIp, GroupLayout.DEFAULT_SIZE, 122, Short.MAX_VALUE)
+											.addComponent(btnRight)))
+									.addGap(167))))
+						.addGroup(Alignment.TRAILING, groupLayout.createSequentialGroup()
 							.addGap(18)
-							.addComponent(btnSearch, GroupLayout.PREFERRED_SIZE, 108, GroupLayout.PREFERRED_SIZE)))
-					.addGap(119))
-				.addGroup(groupLayout.createSequentialGroup()
-					.addContainerGap(724, Short.MAX_VALUE)
-					.addComponent(btnMultiThreadTest, GroupLayout.PREFERRED_SIZE, 140, GroupLayout.PREFERRED_SIZE)
-					.addGap(179))
+							.addComponent(btnConnectToVehicle, GroupLayout.PREFERRED_SIZE, 153, GroupLayout.PREFERRED_SIZE)
+							.addPreferredGap(ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+							.addComponent(lblConnected, GroupLayout.PREFERRED_SIZE, 122, GroupLayout.PREFERRED_SIZE)
+							.addGap(19))))
 		);
 		groupLayout.setVerticalGroup(
 			groupLayout.createParallelGroup(Alignment.LEADING)
 				.addGroup(groupLayout.createSequentialGroup()
-					.addGroup(groupLayout.createParallelGroup(Alignment.LEADING)
-						.addGroup(groupLayout.createSequentialGroup()
-							.addGap(350)
-							.addComponent(btnMultiThreadTest, GroupLayout.PREFERRED_SIZE, 35, GroupLayout.PREFERRED_SIZE)
-							.addGap(18)
-							.addComponent(lblMultiThreadResults, GroupLayout.PREFERRED_SIZE, 40, GroupLayout.PREFERRED_SIZE)
-							.addGap(15)
-							.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE)
-								.addComponent(btnSearch, GroupLayout.PREFERRED_SIZE, 35, GroupLayout.PREFERRED_SIZE)
-								.addComponent(txtVehicleIp, GroupLayout.PREFERRED_SIZE, 36, GroupLayout.PREFERRED_SIZE))
-							.addGap(26)
-							.addGroup(groupLayout.createParallelGroup(Alignment.TRAILING)
-								.addComponent(lbllabelexample, GroupLayout.PREFERRED_SIZE, 40, GroupLayout.PREFERRED_SIZE)
-								.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE)
-									.addComponent(btnRight)
-									.addComponent(btnCenter)
-									.addComponent(btnLeft))))
-						.addGroup(groupLayout.createSequentialGroup()
-							.addGap(512)
-							.addComponent(btnFwd)))
-					.addPreferredGap(ComponentPlacement.RELATED)
+					.addGap(350)
+					.addComponent(btnMultiThreadTest, GroupLayout.PREFERRED_SIZE, 35, GroupLayout.PREFERRED_SIZE)
+					.addGap(18)
+					.addComponent(lblMultiThreadResults, GroupLayout.PREFERRED_SIZE, 40, GroupLayout.PREFERRED_SIZE)
+					.addGap(18)
+					.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE)
+						.addComponent(btnConnectToVehicle, GroupLayout.PREFERRED_SIZE, 35, GroupLayout.PREFERRED_SIZE)
+						.addComponent(lblConnected, GroupLayout.PREFERRED_SIZE, 40, GroupLayout.PREFERRED_SIZE))
+					.addGap(16)
+					.addComponent(btnFwd)
+					.addGap(18)
+					.addGroup(groupLayout.createParallelGroup(Alignment.BASELINE)
+						.addComponent(btnRight)
+						.addComponent(btnLeft)
+						.addComponent(btnCenter))
+					.addPreferredGap(ComponentPlacement.UNRELATED)
 					.addComponent(btnBack)
-					.addContainerGap(74, Short.MAX_VALUE))
+					.addGap(18)
+					.addComponent(slider, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+					.addGap(18))
 		);
 		frame.getContentPane().setLayout(groupLayout);
 		frame.setBounds(100, 100, 1000, 700);

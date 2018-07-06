@@ -60,7 +60,7 @@ public class TCPClient{
 */
 
 public class TCPClient{
-	private String host;
+	private String host;//vehicle on the project router is at 192.168.2.6
 	private int port;
 	
 	//variables to send message to server
@@ -135,10 +135,12 @@ public class TCPClient{
         //socket.close();
     }
     public void sendTCPMessage(String message) throws IOException{
-    	String sendMessage = message + "\n";
-    	bw.write(sendMessage);
+    	//String sendMessage = message + "\n";
+    	//bw.write(sendMessage);
+    	bw.write(message);
     	bw.flush();
-    	System.out.println("Message sent to the server : "+sendMessage);
+    	//System.out.println("Message sent to the server : "+sendMessage);
+    	System.out.println("Message sent to the server : "+message);
     }
     public void sendTestTCPMessage() throws IOException{
         //Socket socket = new Socket();
