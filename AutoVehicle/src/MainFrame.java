@@ -68,6 +68,8 @@ public class MainFrame {
 	private BufferedImage newCarImg;
 	private double angle;
 	protected Image carImg;
+	
+	//private rectangleImage rectangleImageCar = null;
 
 	/**
 	 * Launch the application.
@@ -653,7 +655,6 @@ public class MainFrame {
 			@Override
 			public void mouseClicked(MouseEvent arg0) {
 				
-				
 			}
 		});
 		btnRotateImageTest.setBounds(1280, 413, 140, 35);
@@ -667,19 +668,23 @@ public class MainFrame {
 		g2.drawImage(this.carImg, 0, 0, o);
 		this.carImg = blankCanvas;
 	}
-/*	
+	/*
 	public void paint(Graphics g) {
+		this.setSize();
+		if(rectangleImageCar == null) {
+			rectangleImageCar = new RectangleImage(getImage("img.rsz_vehicle.jpg"), 25, 50);
+		}
 		Graphics2D g2 = (Graphics2D)g;
 		carImg.draw(g2, this);
-		From this video, has some of this function at 2:33.  There's a RectangeImage that we may need to declare.
-		https://www.youtube.com/watch?v=vxNBSVuNKrc
+		//From this video, has some of this function at 2:33.  There's a RectangeImage that we may need to declare.
+		//https://www.youtube.com/watch?v=vxNBSVuNKrc
 	}
-*/
+
 	private void addKeyListener(AL al) {
 		// TODO Auto-generated method stub
 		
 	}
-
+	*/
 
 
 	private InputMap getInputMap(int condition) {
