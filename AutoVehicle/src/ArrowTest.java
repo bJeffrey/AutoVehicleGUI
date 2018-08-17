@@ -2,7 +2,7 @@ import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import javax.swing.*;
-
+//We're not using this class in MainFrame.java.  It can be deleted when ready.
 @SuppressWarnings("serial")
 public class ArrowTest extends JPanel {
    private static final int PREF_W = 400;
