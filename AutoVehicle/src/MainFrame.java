@@ -18,15 +18,28 @@ import java.awt.event.MouseEvent;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import javax.swing.JSlider;
 import javax.swing.event.ChangeListener;
+
+//import ConcurrentLinkedDequeDemo.*;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import java.awt.Image;
 import java.awt.event.KeyEvent;
 import javax.swing.event.ChangeEvent;
 import RotateImage.RotateImage;
 import tcpClient.TCPClient;
+import decodePosition.*;
 
 public class MainFrame {
 
@@ -36,7 +49,14 @@ public class MainFrame {
 	protected String lastCommandSent;
 	private double angle;
 	protected Image carImg;//may be deleted when ready to delete the old car
+	protected RotateImage carRotateImage;
+	protected boolean keepMovingCar;// used to stop the car from moving (for testing purposes)
 	protected JLabel lblMultiThreadResults;
+	protected DecodePosition position;
+	//List<String> listStrings = new LinkedList<String>();
+	List<DecodePosition> positionList;
+	protected static ConcurrentLinkedDeque<String> linkedDeque = new ConcurrentLinkedDeque<String>();
+	//protected static ConcurrentLinkedDeque<DecodePosition> linkedDeque = new ConcurrentLinkedDeque<DecodePosition>();
 	
 
 	/**
@@ -54,6 +74,102 @@ public class MainFrame {
 			}
 		});
 	}
+	
+	public class LinkedDequeProducerIMU implements Runnable{
+		@Override
+		public void run() {
+			/*
+			for(int i=0;i<1000000;i++){
+					linkedDeque.add("Thread A: "+i);
+					//linkedDeque.add(new DecodePosition("some position from A" + i));
+			}
+			*/
+			
+			String runPythonFile = "python E:\\Workstation\\eclipse-workspace\\AutoVehicleGUI\\AutoVehicle\\src\\generateCirclingCoordinates2.py";
+			String runPythonFileArguments = runPythonFile + " 1 2";
+			try {
+				Process p = Runtime.getRuntime().exec(runPythonFileArguments);
+				BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
+				String line;
+				int count = 0;
+				while ((line = stdInput.readLine()) != null) {
+					//linkedDeque.add(new DecodePosition(line));
+					//System.out.println(line);
+					linkedDeque.add(line);
+					System.out.println("IMU produced: " + count);
+					count += 1;
+				}
+			}
+			catch(IOException e1) {
+				e1.printStackTrace();
+			}
+			
+		}
+	}
+	
+	class LinkedDequeProducerTDOA implements Runnable{
+		@Override
+		public void run() {
+			/*
+			for(int i=0;i<1000000;i++){
+					linkedDeque.add("Thread B: "+i);
+					//linkedDeque.add(new DecodePosition("some position from B" + i));
+			}
+			*/
+			
+			String runPythonFile = "python E:\\Workstation\\eclipse-workspace\\AutoVehicleGUI\\AutoVehicle\\src\\generateCirclingCoordinates.py";
+			String runPythonFileArguments = runPythonFile + " 1 2";
+			try {
+				Process p = Runtime.getRuntime().exec(runPythonFileArguments);
+				BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
+				String line;
+				int count = 0;
+				while ((line = stdInput.readLine()) != null) {
+//					linkedDeque.add(new DecodePosition(line));
+					linkedDeque.add(line);
+					System.out.println("TDOA produced: " + count);
+					count = count + 1;
+//					System.out.println(line);
+				}
+			}
+			catch(IOException e1) {
+				e1.printStackTrace();
+			}
+			 
+		}
+	}
+	
+	class LinkedDequeConsumer implements Runnable{
+		@Override
+		public void run() {
+			for(int i=0;i<2000000;i++){
+					String s= linkedDeque.poll();
+					System.out.println("Consumed: " + i);
+					//DecodePosition myposition = linkedDeque.poll();
+//					System.out.println("Element received is: "+s);
+//					String s = myposition.getTime();
+//					if(myposition == null)
+//						System.out.println("Received null");
+//					else
+						//System.out.println("Hello");
+//						System.out.println("Element received is: " + s);
+			}
+		}
+	}
+	
+	public class LinkedDeque{
+		void demo() {
+			int numThreads = 3;
+			ExecutorService exService = Executors.newFixedThreadPool(numThreads);
+			LinkedDequeProducerIMU elementAdd = new LinkedDequeProducerIMU();
+			LinkedDequeConsumer elementGet = new LinkedDequeConsumer();
+			LinkedDequeProducerTDOA elementAdd2 = new LinkedDequeProducerTDOA();
+			exService.execute(elementAdd);
+			exService.execute(elementAdd2);
+			exService.execute(elementGet);
+			exService.shutdown();
+		}
+	}
 
 	public class Consumers implements Runnable {
 
@@ -65,25 +181,43 @@ public class MainFrame {
 
 		public void run() {
 			try {
+				
+				//How to interact with the list of class objects
+				/*
+				position = new DecodePosition("Hello to the Constructor");
+				positionList = new ArrayList<DecodePosition>();
+				positionList.add(position);
+				DecodePosition testposition = positionList.get(0);
+				//System.out.println(testposition.getTime());
+				System.out.println(positionList.get(0).getTime());
+				*/
+				positionList = new ArrayList<DecodePosition>();
 				String line;
 				while((line = (String) queue.take()) != null) {
 					//System.out.println("I'm still inside");
 					//System.out.println("Consumed: " + line);
 					//System.out.println("Consumed: " + queue.take());
+					String singlePosition = (String) queue.take();
+					position = new DecodePosition(singlePosition);
+					positionList.add(position);
 					
+					System.out.println("PositionList size: " + positionList.size());
+					System.out.println("Queue size: " + queue.size());
+					
+					/*
 					EventQueue.invokeLater(new Runnable() {
 
 						public void run() {
-							try {
-								lblMultiThreadResults.setText("Consumed: " + queue.take());
-							} catch (InterruptedException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							}
+							//lblMultiThreadResults.setText("Consumed: " + position);
+							lblMultiThreadResults.setText("In progress...");
+							System.out.println("PositionList size: " + positionList.size());
+							System.out.println("Queue size: " + queue.size());
+							//System.out.println(queue.take());
 						}
 					});
 					
-					Thread.sleep(20);
+					Thread.sleep(10);
+				*/
 				}
 				System.out.println("I made it out");
 				
@@ -103,10 +237,10 @@ public class MainFrame {
 		}
 
 		public void run() {
-			String runPythonFile = "python E:\\Workstation\\eclipse-workspace\\AutoVehicleGUI\\AutoVehicle\\src\\generatePositionString.py";
-			
+			String runPythonFile = "python E:\\Workstation\\eclipse-workspace\\AutoVehicleGUI\\AutoVehicle\\src\\generateCirclingCoordinates.py";
+			String runPythonFileArguments = runPythonFile + " 1 2";
 			try {
-				Process p = Runtime.getRuntime().exec(runPythonFile);
+				Process p = Runtime.getRuntime().exec(runPythonFileArguments);
 				BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
 				String line;
 				while ((line = stdInput.readLine()) != null) {
@@ -153,13 +287,99 @@ public class MainFrame {
 			new Thread(consumer).start();
 
 			try {
-				Thread.sleep(100);
+				Thread.sleep(10);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
 	}	
+	
+	class DriveCar implements Runnable {
+		private int xCurrent;
+		private int yCurrent;
+		
+		public void run() {
+			int count = 0;
+			int xStart = carRotateImage.getX();
+			int yStart = carRotateImage.getY();
+			while(keepMovingCar == true) {
+				
+				xCurrent = carRotateImage.getX();
+				yCurrent = carRotateImage.getY();
+				int xChange = (int) Math.round(4 * Math.cos(count / 40.0));
+				int yChange = (int) Math.round(4 * Math.cos(count / 30.0));
+				int xNext = xCurrent + xChange;
+				int yNext = yCurrent + yChange;
+				
+				double newRise = yNext - yCurrent;
+				double newRun = xNext - xCurrent;
+				
+				double newSlope;
+				double newHeadingInDegrees;
+				if (newRise > 0 && newRun == 0.0) {//facing straight up
+					newHeadingInDegrees = 90;
+				}
+				else if (newRise < 0 && newRun == 0.0) {//facing straight down
+					newHeadingInDegrees = 270;
+				}
+				else if(newRise == 0.0 && newRun < 0.0) {//facing left
+					newHeadingInDegrees = 180;
+				}
+				else if(newRise == 0.0 && newRun > 0.0) {//facing right
+					newHeadingInDegrees = 0;
+				}
+				else if(newRise < 0.0 && newRun < 0.0) {//We're in the 2nd quadrant. Flip the car 180 degrees
+					newSlope = newRise / newRun;
+					newHeadingInDegrees= Math.toDegrees(Math.atan(newSlope)) + 180;
+				}
+				else if(newRise > 0.0 && newRun < 0.0) {//We're in the 3rd quadrant. Flip the car 180 degrees
+					newSlope = newRise / newRun;
+					newHeadingInDegrees= Math.toDegrees(Math.atan(newSlope)) + 180;
+				}
+				else{//We're facing the 1st or 4th quadrant
+					newSlope = newRise / newRun;
+					newHeadingInDegrees= Math.toDegrees(Math.atan(newSlope));
+				}
+				
+				/*
+				System.out.println("newHeadingInDegrees: " + newHeadingInDegrees);
+				System.out.println("yChange: " + yChange);
+				System.out.println("xChange: " + xChange);
+				System.out.println("newRise: " + newRise);
+				System.out.println("newRun: " + newRun);
+				*/
+				
+				carRotateImage.setTheta(newHeadingInDegrees);
+				xCurrent = xNext;
+				yCurrent = yNext;
+				
+				count = count + 1;
+				if(count >= 100000) {
+					count = 0;
+				}
+				EventQueue.invokeLater(new Runnable() {
+
+					public void run() {
+
+						
+						carRotateImage.setBounds(xCurrent, yCurrent, 70, 70);
+						carRotateImage.repaint();
+					}
+				});
+			
+				try {
+					Thread.sleep(60);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			
+			}
+		}
+	}
+	
+	
 	/**
 	 * Create the application.
 	 */
@@ -265,6 +485,17 @@ public class MainFrame {
 		btnMultiThreadTest.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent arg0) {
+				
+				//How to interact with the list of class objects
+				/*
+				position = new DecodePosition("Hello to the Constructor");
+				positionList = new ArrayList<DecodePosition>();
+				positionList.add(position);
+				DecodePosition testposition = positionList.get(0);
+				//System.out.println(testposition.getTime());
+				System.out.println(positionList.get(0).getTime());
+				*/
+				
 				BlockingQueueExamples testBlockingQueue = new BlockingQueueExamples("192.8.8.8");
 				Thread t = new Thread(testBlockingQueue);
 				t.start();
@@ -385,18 +616,21 @@ public class MainFrame {
 			}
 		});
 		
-	    RotateImage carRotateImage = new RotateImage();
+		carRotateImage = new RotateImage();
 	    carRotateImage.setTheta(0.00);
-	    carRotateImage.setBounds(317, 261, 70, 70);
+	    carRotateImage.setBounds(394, 332, 70, 70);
 	    carRotateImage.setBackground(Color.white);
 	    angle = 0.0;//start with the vehicle facing north
 
-		JLabel lblCar = new JLabel("");
-		lblCar.setBounds(273, 352, 66, 27);
+		//JLabel lblCar = new JLabel("");
+		//lblCar.setBounds(273, 352, 66, 27);
 		//Image carImg = new ImageIcon(this.getClass().getResource("/rsz_vehicle.jpg")).getImage();
 		//carImg = new ImageIcon(this.getClass().getResource("/rsz_vehicle.jpg")).getImage();
 		//lblCar.setIcon(new ImageIcon(carImg));
 		
+	    //JTextField textField = new JTextField(TEXT_FIELD_TEXT);
+	    
+	    
 		frame.getContentPane().add(btnMultiThreadTest);
 		frame.getContentPane().add(btnConnectToVehicle);
 		frame.getContentPane().add(lblConnected);
@@ -420,6 +654,25 @@ public class MainFrame {
 		frame.getContentPane().add(lblMap);	
 		lblMap.setOpaque(true);
 		
+		carRotateImage.addMouseListener(new MouseAdapter() {
+	        @Override
+	        public void mouseEntered(MouseEvent e) {
+	            //Set text of another component
+	            //textField.setText("You're over Logout!");
+	        	int x = carRotateImage.getX();
+	        	int y = carRotateImage.getY();
+	        	carRotateImage.setToolTipText("(" + x + ", " + y + ")");
+	        	
+	        }
+
+	        @Override
+	        public void mouseExited(MouseEvent e) {
+	            //Set text of another component
+	            //textField.setText(TEXT_FIELD_TEXT);
+	        }
+	    });
+		
+		
 		JButton btnRotateImageTest = new JButton("Rotate Image Test");
 		btnRotateImageTest.addMouseListener(new MouseAdapter() {
 			@Override
@@ -430,10 +683,43 @@ public class MainFrame {
 				carRotateImage.repaint();//This works as long as carRotateImage is above it
 			}
 		});
-		btnRotateImageTest.setBounds(1280, 413, 140, 35);
+		btnRotateImageTest.setBounds(1280, 448, 140, 35);
 		frame.getContentPane().add(btnRotateImageTest);
+		
+		JButton btnMoveCarTest = new JButton("Move Car Test");
+		btnMoveCarTest.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent arg0) {
+				keepMovingCar = true;
+				DriveCar car = new DriveCar();
+				Thread t = new Thread(car);
+				t.start();
+			}
+		});
+		btnMoveCarTest.setBounds(1225, 403, 117, 35);
+		frame.getContentPane().add(btnMoveCarTest);
+		
+		JButton btnLinkeddequeTest = new JButton("LinkedDeque Test");
+		btnLinkeddequeTest.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent arg0) {
+				LinkedDeque deque = new LinkedDeque();
+				deque.demo();
+			}
+		});
+		btnLinkeddequeTest.setBounds(1280, 358, 140, 35);
+		frame.getContentPane().add(btnLinkeddequeTest);
+		
+		JButton btnStopMovingCar = new JButton("Stop Moving Car");
+		btnStopMovingCar.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				keepMovingCar = false;
+			}
+		});
+		btnStopMovingCar.setBounds(1357, 403, 117, 35);
+		frame.getContentPane().add(btnStopMovingCar);
 	}
-	
 
 	private InputMap getInputMap(int condition) {
 		// TODO Auto-generated method stub
@@ -444,5 +730,4 @@ public class MainFrame {
 		// TODO Auto-generated method stub
 		return null;
 	}
-
 }
