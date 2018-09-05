@@ -648,7 +648,8 @@ public class MainFrame {
 		JLabel lblMap = new JLabel("");
 		lblMap.setBackground(Color.GRAY);
 		lblMap.setBounds(0, 0, 1197, 751);
-		Image mapImg = new ImageIcon(this.getClass().getResource("/new_resized_map.jpg")).getImage();
+		//Image mapImg = new ImageIcon(this.getClass().getResource("/new_resized_map.jpg")).getImage();
+		Image mapImg = new ImageIcon(this.getClass().getResource("/Scaled Test Map.jpg")).getImage();
 		frame.getContentPane().setLayout(null);
 		lblMap.setIcon(new ImageIcon(mapImg));
 		frame.getContentPane().add(lblMap);	
@@ -657,12 +658,10 @@ public class MainFrame {
 		carRotateImage.addMouseListener(new MouseAdapter() {
 	        @Override
 	        public void mouseEntered(MouseEvent e) {
-	            //Set text of another component
-	            //textField.setText("You're over Logout!");
-	        	int x = carRotateImage.getX();
-	        	int y = carRotateImage.getY();
-	        	carRotateImage.setToolTipText("(" + x + ", " + y + ")");
-	        	
+	        	//myposition + half the size of the vehicle width * (the total width of the map / the width of the map image)
+	        	double scaledX = (carRotateImage.getX() + 35) * (10.0 / (double)lblMap.getWidth());
+	        	double scaledY = (carRotateImage.getY() + 35) * (10.0 / (double)lblMap.getHeight());
+	        	carRotateImage.setToolTipText("(" + scaledX + ", " + scaledY + ")");
 	        }
 
 	        @Override
@@ -689,7 +688,7 @@ public class MainFrame {
 		JButton btnMoveCarTest = new JButton("Move Car Test");
 		btnMoveCarTest.addMouseListener(new MouseAdapter() {
 			@Override
-			public void mouseClicked(MouseEvent arg0) {
+			public void mouseClicked(MouseEvent arg0) {				
 				keepMovingCar = true;
 				DriveCar car = new DriveCar();
 				Thread t = new Thread(car);
