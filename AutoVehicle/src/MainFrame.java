@@ -39,8 +39,7 @@ import java.util.List;
 import java.awt.Image;
 import java.awt.event.KeyEvent;
 import javax.swing.event.ChangeEvent;
-import RotateImage.RotateImage;
-import Trajectory.trajectory;
+import Trajectory.*;
 import Vehicle.vehicle;
 import tcpClient.TCPClient;
 import decodePosition.*;
@@ -53,7 +52,6 @@ public class MainFrame {
 	protected String lastCommandSent;
 	private double angle;
 	protected Image carImg;//may be deleted when ready to delete the old car
-	protected RotateImage carRotateImage;
 	protected vehicle Vehicle;//vehicle image displayed on the map
 	protected boolean keepMovingCar;// used to stop the car from moving (for testing purposes)
 	protected JLabel lblMultiThreadResults;
@@ -307,12 +305,12 @@ public class MainFrame {
 		
 		public void run() {
 			int count = 0;
-			int xStart = carRotateImage.getX();
-			int yStart = carRotateImage.getY();
+			int xStart = Vehicle.getX();
+			int yStart = Vehicle.getY();
 			while(keepMovingCar == true) {
 				
-				xCurrent = carRotateImage.getX();
-				yCurrent = carRotateImage.getY();
+				xCurrent = Vehicle.getX();
+				yCurrent = Vehicle.getY();
 				int xChange = (int) Math.round(4 * Math.cos(count / 40.0));
 				int yChange = (int) Math.round(4 * Math.cos(count / 30.0));
 				int xNext = xCurrent + xChange;
@@ -356,7 +354,7 @@ public class MainFrame {
 				System.out.println("newRun: " + newRun);
 				*/
 				
-				carRotateImage.setTheta(newHeadingInDegrees);
+				Vehicle.setTheta(newHeadingInDegrees);
 				xCurrent = xNext;
 				yCurrent = yNext;
 				
@@ -369,8 +367,8 @@ public class MainFrame {
 					public void run() {
 
 						
-						carRotateImage.setBounds(xCurrent, yCurrent, 70, 70);
-						carRotateImage.repaint();
+						Vehicle.setBounds(xCurrent, yCurrent, 70, 70);
+						Vehicle.repaint();
 					}
 				});
 			
@@ -405,8 +403,8 @@ public class MainFrame {
 				public void run() {
 
 					
-					//carRotateImage.setBounds(xCurrent, yCurrent, 70, 70);
-					//carRotateImage.repaint();
+					//Vehicle.setBounds(xCurrent, yCurrent, 70, 70);
+					//Vehicle.repaint();
 					myTrajectory.repaint();
 				}
 			});
@@ -655,10 +653,10 @@ public class MainFrame {
 			}
 		});
 		
-		carRotateImage = new RotateImage();
-	    carRotateImage.setTheta(0.00);
-	    carRotateImage.setBounds(394, 332, 70, 70);
-	    carRotateImage.setBackground(Color.white);
+		Vehicle = new vehicle();
+	    Vehicle.setTheta(0.00);
+	    Vehicle.setBounds(394, 332, 70, 70);
+	    Vehicle.setBackground(Color.white);
 	    angle = 0.0;//start with the vehicle facing north
 
 		//JLabel lblCar = new JLabel("");
@@ -677,7 +675,7 @@ public class MainFrame {
 		frame.getContentPane().add(slider);
 		frame.getContentPane().add(btnCenter);
 		frame.getContentPane().add(lblMultiThreadResults);
-		frame.getContentPane().add(carRotateImage);
+		frame.getContentPane().add(Vehicle);
 		//frame.getContentPane().add(lblCar);
 		frame.setBounds(20, 20, 1500, 800);
 		//frame dimensions
@@ -694,13 +692,13 @@ public class MainFrame {
 		frame.getContentPane().add(lblMap);	
 		lblMap.setOpaque(true);
 		
-		carRotateImage.addMouseListener(new MouseAdapter() {
+		Vehicle.addMouseListener(new MouseAdapter() {
 	        @Override
 	        public void mouseEntered(MouseEvent e) {
 	        	//myposition + half the size of the vehicle width * (the total width of the map / the width of the map image)
-	        	double scaledX = (carRotateImage.getX() + 35) * (10.0 / (double)lblMap.getWidth());
-	        	double scaledY = (carRotateImage.getY() + 35) * (10.0 / (double)lblMap.getHeight());
-	        	carRotateImage.setToolTipText("(" + scaledX + ", " + scaledY + ")");
+	        	double scaledX = (Vehicle.getX() + 35) * (10.0 / (double)lblMap.getWidth());
+	        	double scaledY = (Vehicle.getY() + 35) * (10.0 / (double)lblMap.getHeight());
+	        	Vehicle.setToolTipText("(" + scaledX + ", " + scaledY + ")");
 	        }
 
 	        @Override
@@ -716,9 +714,9 @@ public class MainFrame {
 			@Override
 			public void mouseClicked(MouseEvent arg0) {
 				angle = angle + 0.1;
-				carRotateImage.setTheta(angle);
+				Vehicle.setTheta(angle);
 				//frame.repaint(); //This works!
-				carRotateImage.repaint();//This works as long as carRotateImage is above it
+				Vehicle.repaint();//This works as long as Vehicle is above it
 			}
 		});
 		btnRotateImageTest.setBounds(1280, 448, 140, 35);
