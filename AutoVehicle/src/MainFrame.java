@@ -8,8 +8,10 @@ import javax.swing.BorderFactory;
 import javax.swing.InputMap;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import java.awt.Font;
+import java.awt.Graphics;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.ActionEvent;
@@ -38,6 +40,8 @@ import java.awt.Image;
 import java.awt.event.KeyEvent;
 import javax.swing.event.ChangeEvent;
 import RotateImage.RotateImage;
+import Trajectory.trajectory;
+import Vehicle.vehicle;
 import tcpClient.TCPClient;
 import decodePosition.*;
 
@@ -50,9 +54,11 @@ public class MainFrame {
 	private double angle;
 	protected Image carImg;//may be deleted when ready to delete the old car
 	protected RotateImage carRotateImage;
+	protected vehicle Vehicle;//vehicle image displayed on the map
 	protected boolean keepMovingCar;// used to stop the car from moving (for testing purposes)
 	protected JLabel lblMultiThreadResults;
 	protected DecodePosition position;
+	protected trajectory myTrajectory;	//list of point pairs, or a single point pair, to draw the trajectory
 	//List<String> listStrings = new LinkedList<String>();
 	List<DecodePosition> positionList;
 	protected static ConcurrentLinkedDeque<String> linkedDeque = new ConcurrentLinkedDeque<String>();
@@ -379,6 +385,41 @@ public class MainFrame {
 		}
 	}
 	
+	/*
+	 * Class: trajectory
+	 * Requirements:
+	 * 		* Consume points from a Deque
+	 * 		* draw a line between those points
+	 * 		* remove lines between points when the points have been reached or when they are no longer in the Deque
+	 */
+	class manageTrajectory implements Runnable{
+		
+		public void run() {
+			//do thread things
+			myTrajectory.setPoint1(1280, 100);
+			myTrajectory.setPoint2(1280, 200);
+			
+			
+			EventQueue.invokeLater(new Runnable() {
+
+				public void run() {
+
+					
+					//carRotateImage.setBounds(xCurrent, yCurrent, 70, 70);
+					//carRotateImage.repaint();
+					myTrajectory.repaint();
+				}
+			});
+		
+			try {
+				Thread.sleep(60);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+
 	
 	/**
 	 * Create the application.
@@ -429,8 +470,6 @@ public class MainFrame {
 			e1.printStackTrace();
 		}
 		
-		
-
 		
 		//JLabel lblMultiThreadResults = new JLabel("Multi-thread Results");
 		lblMultiThreadResults = new JLabel("Multi-thread Results");
@@ -718,6 +757,18 @@ public class MainFrame {
 		});
 		btnStopMovingCar.setBounds(1357, 403, 117, 35);
 		frame.getContentPane().add(btnStopMovingCar);
+		
+		JButton btnTrajectoryTest = new JButton("Trajectory Test");
+		btnTrajectoryTest.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				manageTrajectory trajectoryManagementThread = new manageTrajectory();
+				Thread t = new Thread(trajectoryManagementThread);
+				t.start();
+			}
+		});
+		btnTrajectoryTest.setBounds(1280, 313, 140, 35);
+		frame.getContentPane().add(btnTrajectoryTest);
 	}
 
 	private InputMap getInputMap(int condition) {
