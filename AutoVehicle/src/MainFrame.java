@@ -31,6 +31,7 @@ import java.util.concurrent.Executors;
 import javax.swing.JSlider;
 import javax.swing.event.ChangeListener;
 
+
 //import ConcurrentLinkedDequeDemo.*;
 
 import java.util.ArrayList;
@@ -43,6 +44,7 @@ import Trajectory.*;
 import Vehicle.vehicle;
 import tcpClient.TCPClient;
 import decodePosition.*;
+import map.*;
 
 public class MainFrame {
 
@@ -57,6 +59,7 @@ public class MainFrame {
 	protected JLabel lblMultiThreadResults;
 	protected DecodePosition position;
 	protected trajectory myTrajectory;	//list of point pairs, or a single point pair, to draw the trajectory
+	protected Map map;
 	//List<String> listStrings = new LinkedList<String>();
 	List<DecodePosition> positionList;
 	protected static ConcurrentLinkedDeque<String> linkedDeque = new ConcurrentLinkedDeque<String>();
@@ -395,7 +398,7 @@ public class MainFrame {
 		public void run() {
 			//do thread things
 			myTrajectory.setPoint1(1280, 100);
-			myTrajectory.setPoint2(1280, 200);
+			myTrajectory.setPoint2(1500, 400);
 			
 			
 			EventQueue.invokeLater(new Runnable() {
@@ -405,7 +408,8 @@ public class MainFrame {
 					
 					//Vehicle.setBounds(xCurrent, yCurrent, 70, 70);
 					//Vehicle.repaint();
-					myTrajectory.repaint();
+					
+//					myTrajectory.repaint(); this line was just removed
 				}
 			});
 		
@@ -658,6 +662,7 @@ public class MainFrame {
 	    Vehicle.setBounds(394, 332, 70, 70);
 	    Vehicle.setBackground(Color.white);
 	    angle = 0.0;//start with the vehicle facing north
+	    
 
 		//JLabel lblCar = new JLabel("");
 		//lblCar.setBounds(273, 352, 66, 27);
@@ -666,6 +671,19 @@ public class MainFrame {
 		//lblCar.setIcon(new ImageIcon(carImg));
 		
 	    //JTextField textField = new JTextField(TEXT_FIELD_TEXT);
+	    
+	    /*
+	    myTrajectory = new trajectory();
+	    myTrajectory.setBounds(374, 332, 70, 70);
+	    myTrajectory.setBackground(Color.white);
+	    */
+	    map = new Map();
+	    map.setBounds(0, 0, 1197, 751);
+	    
+//		manageTrajectory trajectoryManagementThread = new manageTrajectory();
+//		Thread t = new Thread(trajectoryManagementThread);
+//		t.start();
+	    
 	    
 	    
 		frame.getContentPane().add(btnMultiThreadTest);
@@ -676,29 +694,41 @@ public class MainFrame {
 		frame.getContentPane().add(btnCenter);
 		frame.getContentPane().add(lblMultiThreadResults);
 		frame.getContentPane().add(Vehicle);
-		//frame.getContentPane().add(lblCar);
+		frame.getContentPane().add(map);	
+//		frame.getContentPane().add(myTrajectory);
 		frame.setBounds(20, 20, 1500, 800);
 		//frame dimensions
 		//left,top,right,bottom
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
+		JButton btnTrajectoryTest = new JButton("Remove Trajectory");
+		btnTrajectoryTest.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+			}
+		});
+	    
+	    frame.getContentPane().setLayout(null);
+		
+		
+		/*
 		JLabel lblMap = new JLabel("");
 		lblMap.setBackground(Color.GRAY);
 		lblMap.setBounds(0, 0, 1197, 751);
-		//Image mapImg = new ImageIcon(this.getClass().getResource("/new_resized_map.jpg")).getImage();
 		Image mapImg = new ImageIcon(this.getClass().getResource("/Scaled Test Map.jpg")).getImage();
 		frame.getContentPane().setLayout(null);
 		lblMap.setIcon(new ImageIcon(mapImg));
 		frame.getContentPane().add(lblMap);	
 		lblMap.setOpaque(true);
+		*/
 		
 		Vehicle.addMouseListener(new MouseAdapter() {
 	        @Override
 	        public void mouseEntered(MouseEvent e) {
 	        	//myposition + half the size of the vehicle width * (the total width of the map / the width of the map image)
-	        	double scaledX = (Vehicle.getX() + 35) * (10.0 / (double)lblMap.getWidth());
-	        	double scaledY = (Vehicle.getY() + 35) * (10.0 / (double)lblMap.getHeight());
-	        	Vehicle.setToolTipText("(" + scaledX + ", " + scaledY + ")");
+	        	
+//	        	double scaledX = (Vehicle.getX() + 35) * (10.0 / (double)lblMap.getWidth());
+//	        	double scaledY = (Vehicle.getY() + 35) * (10.0 / (double)lblMap.getHeight());
+//	        	Vehicle.setToolTipText("(" + scaledX + ", " + scaledY + ")");
 	        }
 
 	        @Override
@@ -756,13 +786,18 @@ public class MainFrame {
 		btnStopMovingCar.setBounds(1357, 403, 117, 35);
 		frame.getContentPane().add(btnStopMovingCar);
 		
-		JButton btnTrajectoryTest = new JButton("Trajectory Test");
 		btnTrajectoryTest.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				manageTrajectory trajectoryManagementThread = new manageTrajectory();
-				Thread t = new Thread(trajectoryManagementThread);
-				t.start();
+				map.remove(true);
+				Vehicle.repaint();
+				map.repaint();
+//				Vehicle.repaint();
+//				frame.repaint();
+				
+//				manageTrajectory trajectoryManagementThread = new manageTrajectory();
+//				Thread t = new Thread(trajectoryManagementThread);
+//				t.start();
 			}
 		});
 		btnTrajectoryTest.setBounds(1280, 313, 140, 35);
