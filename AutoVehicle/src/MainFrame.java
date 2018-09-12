@@ -40,8 +40,8 @@ import java.util.List;
 import java.awt.Image;
 import java.awt.event.KeyEvent;
 import javax.swing.event.ChangeEvent;
-import Trajectory.*;
-import Vehicle.vehicle;
+//import Trajectory.*;
+import vehicle.*;
 import tcpClient.TCPClient;
 import decodePosition.*;
 import map.*;
@@ -54,11 +54,11 @@ public class MainFrame {
 	protected String lastCommandSent;
 	private double angle;
 	protected Image carImg;//may be deleted when ready to delete the old car
-	protected vehicle Vehicle;//vehicle image displayed on the map
+	protected Vehicle vehicle;//vehicle image displayed on the map
 	protected boolean keepMovingCar;// used to stop the car from moving (for testing purposes)
 	protected JLabel lblMultiThreadResults;
 	protected DecodePosition position;
-	protected trajectory myTrajectory;	//list of point pairs, or a single point pair, to draw the trajectory
+//	protected trajectory myTrajectory;	//list of point pairs, or a single point pair, to draw the trajectory
 	protected Map map;
 	//List<String> listStrings = new LinkedList<String>();
 	List<DecodePosition> positionList;
@@ -308,12 +308,13 @@ public class MainFrame {
 		
 		public void run() {
 			int count = 0;
-			int xStart = Vehicle.getX();
-			int yStart = Vehicle.getY();
+			int xStart = vehicle.getX();
+			int yStart = vehicle.getY();
+			
 			while(keepMovingCar == true) {
 				
-				xCurrent = Vehicle.getX();
-				yCurrent = Vehicle.getY();
+				xCurrent = vehicle.getX();
+				yCurrent = vehicle.getY();
 				int xChange = (int) Math.round(4 * Math.cos(count / 40.0));
 				int yChange = (int) Math.round(4 * Math.cos(count / 30.0));
 				int xNext = xCurrent + xChange;
@@ -357,7 +358,7 @@ public class MainFrame {
 				System.out.println("newRun: " + newRun);
 				*/
 				
-				Vehicle.setTheta(newHeadingInDegrees);
+				vehicle.setTheta(newHeadingInDegrees);
 				xCurrent = xNext;
 				yCurrent = yNext;
 				
@@ -370,8 +371,8 @@ public class MainFrame {
 					public void run() {
 
 						
-						Vehicle.setBounds(xCurrent, yCurrent, 70, 70);
-						Vehicle.repaint();
+						vehicle.setBounds(xCurrent, yCurrent, 70, 70);
+						vehicle.repaint();
 					}
 				});
 			
@@ -397,8 +398,8 @@ public class MainFrame {
 		
 		public void run() {
 			//do thread things
-			myTrajectory.setPoint1(1280, 100);
-			myTrajectory.setPoint2(1500, 400);
+//			myTrajectory.setPoint1(1280, 100);
+//			myTrajectory.setPoint2(1500, 400);
 			
 			
 			EventQueue.invokeLater(new Runnable() {
@@ -406,8 +407,8 @@ public class MainFrame {
 				public void run() {
 
 					
-					//Vehicle.setBounds(xCurrent, yCurrent, 70, 70);
-					//Vehicle.repaint();
+					//vehicle.setBounds(xCurrent, yCurrent, 70, 70);
+					//vehicle.repaint();
 					
 //					myTrajectory.repaint(); this line was just removed
 				}
@@ -657,10 +658,10 @@ public class MainFrame {
 			}
 		});
 		
-		Vehicle = new vehicle();
-	    Vehicle.setTheta(0.00);
-	    Vehicle.setBounds(394, 332, 70, 70);
-	    Vehicle.setBackground(Color.white);
+		vehicle = new Vehicle();
+	    vehicle.setTheta(0.00);
+	    vehicle.setBounds(394, 332, 70, 70);
+	    vehicle.setBackground(Color.white);
 	    angle = 0.0;//start with the vehicle facing north
 	    
 
@@ -693,7 +694,7 @@ public class MainFrame {
 		frame.getContentPane().add(slider);
 		frame.getContentPane().add(btnCenter);
 		frame.getContentPane().add(lblMultiThreadResults);
-		frame.getContentPane().add(Vehicle);
+		frame.getContentPane().add(vehicle);
 		frame.getContentPane().add(map);	
 //		frame.getContentPane().add(myTrajectory);
 		frame.setBounds(20, 20, 1500, 800);
@@ -721,7 +722,7 @@ public class MainFrame {
 		lblMap.setOpaque(true);
 		*/
 		
-		Vehicle.addMouseListener(new MouseAdapter() {
+		vehicle.addMouseListener(new MouseAdapter() {
 	        @Override
 	        public void mouseEntered(MouseEvent e) {
 	        	//myposition + half the size of the vehicle width * (the total width of the map / the width of the map image)
@@ -744,9 +745,9 @@ public class MainFrame {
 			@Override
 			public void mouseClicked(MouseEvent arg0) {
 				angle = angle + 0.1;
-				Vehicle.setTheta(angle);
+				vehicle.setTheta(angle);
 				//frame.repaint(); //This works!
-				Vehicle.repaint();//This works as long as Vehicle is above it
+				vehicle.repaint();//This works as long as Vehicle is above it
 			}
 		});
 		btnRotateImageTest.setBounds(1280, 448, 140, 35);
@@ -790,9 +791,9 @@ public class MainFrame {
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				map.remove(true);
-				Vehicle.repaint();
+				vehicle.repaint();
 				map.repaint();
-//				Vehicle.repaint();
+//				vehicle.repaint();
 //				frame.repaint();
 				
 //				manageTrajectory trajectoryManagementThread = new manageTrajectory();

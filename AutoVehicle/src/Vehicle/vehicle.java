@@ -1,4 +1,4 @@
-package Vehicle;
+package vehicle;
 
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -9,12 +9,12 @@ import java.io.IOException;
 import javax.imageio.ImageIO;
 import javax.swing.JPanel;
 
-public class vehicle extends JPanel {
+public class Vehicle extends JPanel {
 	BufferedImage carImage;
 	private double thetaRadians;
 	private double thetaDegreesRotatedFromBeginning = 90;
 	
-	public vehicle() {
+	public Vehicle() {
 		super();
 		try {
 			carImage = ImageIO.read(new File("E:\\Workstation\\eclipse-workspace\\AutoVehicleGUI\\AutoVehicle\\img\\vehicle_v2_right.jpg"));
@@ -45,3 +45,4 @@ public class vehicle extends JPanel {
 	    //g.drawLine(0, 0, 100, 100);
 	}
 }
+
