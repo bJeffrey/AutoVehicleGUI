@@ -1,5 +1,6 @@
 package map;
 
+import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
@@ -36,9 +37,9 @@ public class Map extends JPanel{
 	}
 	
 	public void setTrajectory(Graphics g) {
-		g.drawLine(0, 0, 100, 100);
-		g.drawLine(100, 100, 100, 250);
-		
+		g.drawLine(394, 368, 500, 368);
+		g.drawLine(500, 368, 800, 250);
+		g.drawLine(800, 250, 900, 100);
 	}
 	
 	public void setVehicleTheta(double thetaHeadingInDegrees) {
@@ -70,6 +71,7 @@ public class Map extends JPanel{
 	    if(!removeLines) {
 	    	System.out.println("removeLines is false");
 	    	setTrajectory(g);
+//	    	g.setColor(Color.WHITE);
 	    }
 	    
 	}
@@ -122,7 +124,7 @@ class Trajectory extends JPanel{
 	    g2d.translate(-carImage.getWidth(this) / 2, -carImage.getHeight(this) / 2);
 	    g2d.drawImage(carImage, 0, 0, null);
 	    
-	    g.drawLine(x1, y1, x2, y2);
+	    //g.drawLine(x1, y1, x2, y2);
 	}
 
 }

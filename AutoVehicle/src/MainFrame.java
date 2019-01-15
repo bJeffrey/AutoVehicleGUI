@@ -56,6 +56,7 @@ public class MainFrame {
 	protected Image carImg;//may be deleted when ready to delete the old car
 	protected Vehicle vehicle;//vehicle image displayed on the map
 	protected boolean keepMovingCar;// used to stop the car from moving (for testing purposes)
+	protected boolean continueRunningPythonPrograms; // used to stop running the python programs
 	protected JLabel lblMultiThreadResults;
 	protected DecodePosition position;
 //	protected trajectory myTrajectory;	//list of point pairs, or a single point pair, to draw the trajectory
@@ -82,7 +83,7 @@ public class MainFrame {
 		});
 	}
 	
-	public class LinkedDequeProducerIMU implements Runnable{
+	public class LinkedDequeIMU implements Runnable{
 		@Override
 		public void run() {
 			/*
@@ -96,10 +97,10 @@ public class MainFrame {
 			String runPythonFileArguments = runPythonFile + " 1 2";
 			try {
 				Process p = Runtime.getRuntime().exec(runPythonFileArguments);
-				BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
+				BufferedReader IMUOutput = new BufferedReader(new InputStreamReader(p.getInputStream()));
 				String line;
 				int count = 0;
-				while ((line = stdInput.readLine()) != null) {
+				while ((line = IMUOutput.readLine()) != null) {
 					//linkedDeque.add(new DecodePosition(line));
 					//System.out.println(line);
 					linkedDeque.add(line);
@@ -114,7 +115,7 @@ public class MainFrame {
 		}
 	}
 	
-	class LinkedDequeProducerTDOA implements Runnable{
+	class LinkedDequeTDOA implements Runnable{
 		@Override
 		public void run() {
 			/*
@@ -146,12 +147,72 @@ public class MainFrame {
 		}
 	}
 	
-	class LinkedDequeConsumer implements Runnable{
+	class LinkedDequePythonRunner implements Runnable{
+		private String IMUExecuter = "python E:\\Workstation\\eclipse-workspace\\AutoVehicleGUI\\AutoVehicle\\src\\generateCirclingCoordinates.py";
+		private String IMUOutput = "";
+		private String runTDOA = "python ";
+		private String combinerExecuter = "python ";
+		private String runTrajectory = "python ";
+		private boolean runIMU = false;
+		Process IMUProcess;
+		Process combinerProcess;
+		BufferedReader IMUReader;
+		int IMUCount = 0;
+		
+		public void setRunIMU(boolean myRun) {
+			runIMU = myRun;
+		}
+		
+		public void run() {
+			System.out.println("running the python runner");
+	
+			try {
+				IMUProcess = Runtime.getRuntime().exec(IMUExecuter);
+				IMUReader = new BufferedReader(new InputStreamReader(IMUProcess.getInputStream()));
+				String IMULine;
+				
+				while(continueRunningPythonPrograms == true) {
+					if(runIMU == true) {
+						IMULine = IMUReader.readLine();
+						
+						if (IMULine == null) {
+							runIMU = false;
+							System.out.println("No output detected from IMU.py");
+						}
+						else {
+							IMUCount += 1;
+							IMUOutput += IMULine;
+							System.out.println(IMULine);
+						}
+						/*
+						if(IMUCount == 20) {
+							//start the combiner program, reset count
+							IMUCount = 0;
+							combinerProcess = Runtime.getRuntime().exec(combinerExecuter);
+							BufferedReader combinerInput = new BufferedReader(new InputStreamReader(combinerProcess.getInputStream()));
+						}
+						*/
+					}
+				}
+
+			}
+			catch(IOException e1) {
+				e1.printStackTrace();
+			}
+			 
+		}
+	}
+	
+	class LinkedDequeCombiner implements Runnable{
 		@Override
 		public void run() {
 			for(int i=0;i<2000000;i++){
 					String s= linkedDeque.poll();
 					System.out.println("Consumed: " + i);
+					
+					linkedDeque.add("IMU");
+					System.out.println(s);
+					
 					//DecodePosition myposition = linkedDeque.poll();
 //					System.out.println("Element received is: "+s);
 //					String s = myposition.getTime();
@@ -168,16 +229,32 @@ public class MainFrame {
 		void demo() {
 			int numThreads = 3;
 			ExecutorService exService = Executors.newFixedThreadPool(numThreads);
-			LinkedDequeProducerIMU elementAdd = new LinkedDequeProducerIMU();
-			LinkedDequeConsumer elementGet = new LinkedDequeConsumer();
-			LinkedDequeProducerTDOA elementAdd2 = new LinkedDequeProducerTDOA();
+			LinkedDequeIMU elementAdd = new LinkedDequeIMU();
+			LinkedDequeCombiner elementGet = new LinkedDequeCombiner();
+			LinkedDequeTDOA elementAdd2 = new LinkedDequeTDOA();
 			exService.execute(elementAdd);
 			exService.execute(elementAdd2);
 			exService.execute(elementGet);
 			exService.shutdown();
 		}
 	}
+	public class LinkedDeque2{
+		void demo() {
+			int numThreads = 1;
+			ExecutorService exService = Executors.newFixedThreadPool(numThreads);
+			LinkedDequePythonRunner elementAdd = new LinkedDequePythonRunner();
+			elementAdd.setRunIMU(true);
+//			LinkedDequeCombiner elementGet = new LinkedDequeCombiner();
+//			LinkedDequeTDOA elementAdd2 = new LinkedDequeTDOA();
+			exService.execute(elementAdd);
+//			exService.execute(elementAdd2);
+//			exService.execute(elementGet);
+			exService.shutdown();
+		}
+	}
 
+	
+	
 	public class Consumers implements Runnable {
 
 		protected BlockingQueue queue = null;
@@ -248,9 +325,9 @@ public class MainFrame {
 			String runPythonFileArguments = runPythonFile + " 1 2";
 			try {
 				Process p = Runtime.getRuntime().exec(runPythonFileArguments);
-				BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
+				BufferedReader IMUOutput = new BufferedReader(new InputStreamReader(p.getInputStream()));
 				String line;
-				while ((line = stdInput.readLine()) != null) {
+				while ((line = IMUOutput.readLine()) != null) {
 					//System.out.println(line);
 					try {
 						bq.put(line);
@@ -456,7 +533,7 @@ public class MainFrame {
 		    	//If we connected to the tcp server, close the socket
 		    	if (connected == true) {
 		        	System.out.println("Closing socket");
-		        	client.closeSocket();
+		        	//client.closeSocket();
 		        }
 		        else {
 		        	System.out.println("Exiting...");
@@ -727,9 +804,9 @@ public class MainFrame {
 	        public void mouseEntered(MouseEvent e) {
 	        	//myposition + half the size of the vehicle width * (the total width of the map / the width of the map image)
 	        	
-//	        	double scaledX = (Vehicle.getX() + 35) * (10.0 / (double)lblMap.getWidth());
-//	        	double scaledY = (Vehicle.getY() + 35) * (10.0 / (double)lblMap.getHeight());
-//	        	Vehicle.setToolTipText("(" + scaledX + ", " + scaledY + ")");
+	        	double scaledX = (vehicle.getX() + 35) * (10.0 / (double)map.getWidth());
+	        	double scaledY = (vehicle.getY() + 35) * (10.0 / (double)map.getHeight());
+	        	vehicle.setToolTipText("(" + scaledX + ", " + scaledY + ")");
 	        }
 
 	        @Override
@@ -791,9 +868,9 @@ public class MainFrame {
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				map.remove(true);
-				vehicle.repaint();
-				map.repaint();
 //				vehicle.repaint();
+				map.repaint();
+				vehicle.repaint();
 //				frame.repaint();
 				
 //				manageTrajectory trajectoryManagementThread = new manageTrajectory();
@@ -803,6 +880,18 @@ public class MainFrame {
 		});
 		btnTrajectoryTest.setBounds(1280, 313, 140, 35);
 		frame.getContentPane().add(btnTrajectoryTest);
+		
+		JButton btnRunPythonScripts = new JButton("Run Python Scripts");
+		btnRunPythonScripts.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent arg0) {
+				continueRunningPythonPrograms = true;
+				LinkedDeque2 deque = new LinkedDeque2();
+				deque.demo();
+			}
+		});
+		btnRunPythonScripts.setBounds(1280, 268, 140, 35);
+		frame.getContentPane().add(btnRunPythonScripts);
 	}
 
 	private InputMap getInputMap(int condition) {
