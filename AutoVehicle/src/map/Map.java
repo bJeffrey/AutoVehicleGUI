@@ -16,6 +16,7 @@ public class Map extends JPanel{
 	boolean removeLines;
 	private Vehicle vehicle = new Vehicle();
 	private Trajectory trajectory = new Trajectory();
+	protected String OSName = System.getProperty("os.name");
 	
 	
 	public Map(){
@@ -24,8 +25,20 @@ public class Map extends JPanel{
 		removeLines = false;
 		
 		try {
-			mapImage = ImageIO.read(new File("E:\\Workstation\\eclipse-workspace\\AutoVehicleGUI\\AutoVehicle\\img\\Scaled Test Map.jpg"));
+			//mapImage = ImageIO.read(new File("E:\\Workstation\\eclipse-workspace\\AutoVehicleGUI\\AutoVehicle\\img\\Scaled Test Map.jpg"));
 
+			if (OSName.equalsIgnoreCase("Windows 10")) {
+//				runPrintOne = "python E:\\Workstation\\eclipse-workspace\\AutoVehicleGUI\\AutoVehicle\\src\\printOne.py";
+//				runPrintOne = "python printOne.py";	
+				mapImage = ImageIO.read(new File("E:\\Workstation\\eclipse-workspace\\AutoVehicleGUI\\AutoVehicle\\img\\workspace v1.jpg"));
+			}
+			else
+				mapImage = ImageIO.read(new File("/home/workstation/Pictures/autovehicle/workspace v1.jpg"));
+//				runPrintOne = "python printOne.py";
+			
+			
+			
+//			mapImage = ImageIO.read(new File("E:\\Workstation\\eclipse-workspace\\AutoVehicleGUI\\AutoVehicle\\img\\workspace v1.jpg"));
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -62,14 +75,14 @@ public class Map extends JPanel{
 	    
 	    
 	    if(removeLines) {
-	    	System.out.println("removeLines is true");
+//	    	System.out.println("removeLines is true");
 //	    	g = Graphics();
 //	    	g2d = (Graphics2D) g;
 	    }
 	    
 	    g2d.drawImage(mapImage, 0, 0, null);
 	    if(!removeLines) {
-	    	System.out.println("removeLines is false");
+//	    	System.out.println("removeLines is false"); this is called whenever the window is resized
 	    	setTrajectory(g);
 //	    	g.setColor(Color.WHITE);
 	    }
@@ -82,6 +95,7 @@ class Trajectory extends JPanel{
 	private int y1;
 	private int x2;
 	private int y2;
+	protected String OSName = System.getProperty("os.name");
 	
 	public void setPoint1(int x, int y) {
 		x1 = x;
@@ -99,12 +113,16 @@ class Trajectory extends JPanel{
 	public Trajectory() {
 		super();
 		try {
-			carImage = ImageIO.read(new File("E:\\Workstation\\eclipse-workspace\\AutoVehicleGUI\\AutoVehicle\\img\\vehicle_v2_right.jpg"));
+			if (OSName.equalsIgnoreCase("Windows 10")) {
+				carImage = ImageIO.read(new File("E:\\Workstation\\eclipse-workspace\\AutoVehicleGUI\\AutoVehicle\\img\\vehicle_v2_right.jpg"));
+			}
+			else
+				carImage = ImageIO.read(new File("/home/workstation/Pictures/autovehicle/vehicle_v2_right.jpg"));
 //			int height = carImage.getHeight();
 //			int width = carImage.getWidth();
 //			System.out.println(height);
 //			System.out.println(width);
-			//carImage = ImageIO.read(new File("img/vehicle_v3.jpg"));
+			//carImage = ImageIO.read(new File("/home/workstation/Pictures/autovehicle/vehicle_v3.jpg"));
 			//carImage = ImageIO.read(new File("E:\\Workstation\\eclipse-workspace\\AutoVehicleGUI\\AutoVehicle\\img\\rsz_vehicle.jpg"));
 			//carImage = ImageIO.read(new File(fileLocation));
 		} catch (IOException e) {

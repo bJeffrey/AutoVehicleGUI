@@ -45,13 +45,21 @@ import vehicle.*;
 import tcpClient.TCPClient;
 import decodePosition.*;
 import map.*;
+import serverSocket.SocketServer;
 
 public class MainFrame {
 
 	private JFrame frame;
 	protected TCPClient client;
 	protected boolean connected;
-	protected String lastCommandSent;
+	protected String lastCommandSent; //last command sent to the vehicle
+	protected String currentDriveState = "Stop"; //keeps track of the 8 possible drive states
+	protected double tireRadius = 0.12954; //tire radius (in meters)
+	protected double fullSpeedRPM = 165;
+	protected int SPEEDSAFETYLIMIT = 25;
+	protected int DEGREESPERSECONDSAFETYLIMIT = 30;
+	protected double r1 = 1.0; //inner circle radius for the inner wheels
+	protected double r2 = r1 + 0.74; //outer circle radius for outer wheel
 	private double angle;
 	protected Image carImg;//may be deleted when ready to delete the old car
 	protected Vehicle vehicle;//vehicle image displayed on the map
@@ -65,6 +73,12 @@ public class MainFrame {
 	List<DecodePosition> positionList;
 	protected static ConcurrentLinkedDeque<String> linkedDeque = new ConcurrentLinkedDeque<String>();
 	//protected static ConcurrentLinkedDeque<DecodePosition> linkedDeque = new ConcurrentLinkedDeque<DecodePosition>();
+	protected JLabel lblLinkedDequeResults = new JLabel("Linked Deque Results");
+	protected String OSName = System.getProperty("os.name");
+	protected String runPrintOne;//runs by absolute file path (different for Windows/Linux)
+	protected String runGenerateCirclingCoordinates2 = "python generateCirclingCoordinates2.py";
+	protected String runGenerateCirclingCoordinates;
+	protected String runCoordinator;
 	
 
 	/**
@@ -93,8 +107,11 @@ public class MainFrame {
 			}
 			*/
 			
-			String runPythonFile = "python E:\\Workstation\\eclipse-workspace\\AutoVehicleGUI\\AutoVehicle\\src\\generateCirclingCoordinates2.py";
-			String runPythonFileArguments = runPythonFile + " 1 2";
+			//String runPythonFile = "python E:\\Workstation\\eclipse-workspace\\AutoVehicleGUI\\AutoVehicle\\src\\generateCirclingCoordinates2.py";
+//			runGenerateCirclingCoordinates2 = "python generateCirclingCoordinates2.py";
+			String runPythonFileArguments = runGenerateCirclingCoordinates2 + " 1 2";
+			System.out.println("generateCirclingCoordinates2.py is in...");
+			System.out.println(System.getProperty("user.dir"));
 			try {
 				Process p = Runtime.getRuntime().exec(runPythonFileArguments);
 				BufferedReader IMUOutput = new BufferedReader(new InputStreamReader(p.getInputStream()));
@@ -106,12 +123,35 @@ public class MainFrame {
 					linkedDeque.add(line);
 					System.out.println("IMU produced: " + count);
 					count += 1;
+					/*
+					lblLinkedDequeResults.setText("IMU running");
+					lblLinkedDequeResults.repaint();
+					 EventQueue.invokeLater(new Runnable() {
+
+						public void run() {
+							//lblMultiThreadResults.setText("Consumed: " + position);
+							lblLinkedDequeResults.setText("IMU running");
+							lblLinkedDequeResults.repaint();
+							
+							//System.out.println("PositionList size: " + positionList.size());
+							//System.out.println("Queue size: " + queue.size());
+							//System.out.println(queue.take());
+						}
+					});
+					
+					Thread.sleep(10);
+					*/ 
 				}
 			}
 			catch(IOException e1) {
 				e1.printStackTrace();
+			} 
+			/*
+			catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
-			
+			*/
 		}
 	}
 	
@@ -125,8 +165,16 @@ public class MainFrame {
 			}
 			*/
 			
-			String runPythonFile = "python E:\\Workstation\\eclipse-workspace\\AutoVehicleGUI\\AutoVehicle\\src\\generateCirclingCoordinates.py";
-			String runPythonFileArguments = runPythonFile + " 1 2";
+			runGenerateCirclingCoordinates = "python E:\\Workstation\\eclipse-workspace\\AutoVehicleGUI\\AutoVehicle\\src\\generateCirclingCoordinates.py";
+			if (OSName.equalsIgnoreCase("Windows 10")) {
+//				runPrintOne = "python printOne.py";
+				runGenerateCirclingCoordinates = "python E:\\Workstation\\eclipse-workspace\\AutoVehicleGUI\\AutoVehicle\\src\\generateCirclingCoordinates.py";
+			}
+			else
+				runGenerateCirclingCoordinates = "python generateCirclingCoordinates.py";
+			
+			
+			String runPythonFileArguments = runGenerateCirclingCoordinates + " 1 2";
 			try {
 				Process p = Runtime.getRuntime().exec(runPythonFileArguments);
 				BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
@@ -321,8 +369,19 @@ public class MainFrame {
 		}
 
 		public void run() {
-			String runPythonFile = "python E:\\Workstation\\eclipse-workspace\\AutoVehicleGUI\\AutoVehicle\\src\\generateCirclingCoordinates.py";
-			String runPythonFileArguments = runPythonFile + " 1 2";
+//			String runGenerateCirclingCoordinates = "python E:\\Workstation\\eclipse-workspace\\AutoVehicleGUI\\AutoVehicle\\src\\generateCirclingCoordinates.py";
+
+			if (OSName.equalsIgnoreCase("Windows 10")) {
+//				runPrintOne = "python E:\\Workstation\\eclipse-workspace\\AutoVehicleGUI\\AutoVehicle\\src\\printOne.py";
+//				runPrintOne = "python printOne.py";	
+				runGenerateCirclingCoordinates = "python E:\\Workstation\\eclipse-workspace\\AutoVehicleGUI\\AutoVehicle\\src\\generateCirclingCoordinates.py";
+			}
+			else
+				runGenerateCirclingCoordinates = "python generateCirclingCoordinates.py";
+			
+			
+			
+			String runPythonFileArguments = runGenerateCirclingCoordinates + " 1 2";
 			try {
 				Process p = Runtime.getRuntime().exec(runPythonFileArguments);
 				BufferedReader IMUOutput = new BufferedReader(new InputStreamReader(p.getInputStream()));
@@ -499,7 +558,28 @@ public class MainFrame {
 			}
 		}
 	}
+	
+	class RunAll implements Runnable{
+		public void run() {
+			if (OSName.equalsIgnoreCase("Windows 10")) {
+				runCoordinator = "python E:\\Workstation\\eclipse-workspace\\AutoVehicleGUI\\AutoVehicle\\src\\coordinator.py";	
+			}
+			else
+				runCoordinator = "python coordinator.py";
+			
+			try {
+				Process p = Runtime.getRuntime().exec(runCoordinator);
+				BufferedReader CoordinatorOutput = new BufferedReader(new InputStreamReader(p.getInputStream()));
+				String line = CoordinatorOutput.readLine();
+				System.out.println(line);
 
+			}
+			catch(IOException e1) {
+				e1.printStackTrace();
+			} 
+			
+		}
+	}
 	
 	/**
 	 * Create the application.
@@ -553,7 +633,7 @@ public class MainFrame {
 		
 		//JLabel lblMultiThreadResults = new JLabel("Multi-thread Results");
 		lblMultiThreadResults = new JLabel("Multi-thread Results");
-		lblMultiThreadResults.setBounds(1238, 538, 217, 40);
+		lblMultiThreadResults.setBounds(1238, 380, 217, 40);
 		lblMultiThreadResults.setOpaque(true);
 		lblMultiThreadResults.setHorizontalAlignment(SwingConstants.CENTER);
 		lblMultiThreadResults.setFont(new Font("Tahoma", Font.BOLD, 10));
@@ -561,7 +641,7 @@ public class MainFrame {
 		lblMultiThreadResults.setBackground(Color.LIGHT_GRAY);
 		
 		JLabel lblConnected = new JLabel("Vehicle Not Connected");
-		lblConnected.setBounds(1352, 599, 122, 40);
+		lblConnected.setBounds(1340, 430, 122, 40);
 		lblConnected.setHorizontalAlignment(SwingConstants.CENTER);
 		lblConnected.setFont(new Font("Tahoma", Font.BOLD, 10));
 		lblConnected.setOpaque(true);
@@ -569,7 +649,7 @@ public class MainFrame {
 		lblConnected.setBorder(BorderFactory.createLineBorder(Color.BLACK, 1, true));
 		
 		JButton btnConnectToVehicle = new JButton("Connect to Vehicle");
-		btnConnectToVehicle.setBounds(1225, 602, 117, 35);
+		btnConnectToVehicle.setBounds(1213, 433, 117, 35);
 		btnConnectToVehicle.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 			}
@@ -596,7 +676,7 @@ public class MainFrame {
 		});
 		
 		JButton btnMultiThreadTest = new JButton("Multi-Thread Test");
-		btnMultiThreadTest.setBounds(1280, 493, 140, 35);
+		btnMultiThreadTest.setBounds(1280, 335, 140, 35);
 		btnMultiThreadTest.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 			}
@@ -622,7 +702,7 @@ public class MainFrame {
 		});
 		
 		JButton btnCenter = new JButton("center");
-		btnCenter.setBounds(1400, 716, 74, 21);
+		btnCenter.setBounds(1381, 566, 74, 21);
 		btnCenter.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
@@ -636,11 +716,21 @@ public class MainFrame {
 			}
 		});
 		
-		JSlider slider = new JSlider();
-		slider.setBounds(1263, 715, 111, 22);
-		slider.addChangeListener(new ChangeListener() {
+		JSlider degreesPerSecondSlider = new JSlider();
+		degreesPerSecondSlider.setBounds(1213, 566, 111, 22);
+		degreesPerSecondSlider.setValue(20);
+		frame.getContentPane().add(degreesPerSecondSlider);
+		degreesPerSecondSlider.setMaximum(DEGREESPERSECONDSAFETYLIMIT);
+		degreesPerSecondSlider.setValue(DEGREESPERSECONDSAFETYLIMIT/2);
+		
+		JSlider speedSlider = new JSlider();
+		speedSlider.setBounds(1084, 566, 111, 22);
+//		speedSlider.setValue(SPEEDSAFETYLIMIT);
+		speedSlider.setMaximum(SPEEDSAFETYLIMIT);
+		speedSlider.setValue(SPEEDSAFETYLIMIT/2);
+		speedSlider.addChangeListener(new ChangeListener() {
 			public void stateChanged(ChangeEvent arg0) {
-				String speed = Integer.toString(slider.getValue());
+				String speed = Integer.toString(speedSlider.getValue());
 				
 				System.out.println("Setting Speed to " + speed);
 				try {
@@ -652,7 +742,7 @@ public class MainFrame {
 		});
 		
 		JButton btnKeyControl = new JButton("Manual Control");
-		btnKeyControl.setBounds(1300, 653, 145, 49);
+		btnKeyControl.setBounds(1317, 489, 145, 49);
 		btnKeyControl.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 			}
@@ -660,16 +750,26 @@ public class MainFrame {
 		btnKeyControl.addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyPressed(KeyEvent arg0) {
+//				Format for the commands:
+//					F/R Space Speed_1 Speed_2 Speed_3 Space F/R Space Speed_1 Speed_2 Speed_3
+				
+//				Formula to change degrees / second to speed of motor 0 - 100
+//				x (degrees / 1 second) * (2 * pi * r1 / 360 degrees) * (1 tire revolution / 2 * pi * tireRadius) * (60 sec / 1 min) * 100/165
+				
 				int keyCode = arg0.getKeyCode();
-				if(keyCode == arg0.VK_LEFT) {
+	
+				if(keyCode == arg0.VK_LEFT) {					
+					
 					if(lastCommandSent != "left") {
 						System.out.println("left");
-						lastCommandSent = "left";
+						lastCommandSent = "left";							
 						try {
 							client.sendTCPMessage("left");
 						} catch (IOException e) {
+							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
+
 					}
 				}
 				if(keyCode == arg0.VK_RIGHT) {
@@ -756,8 +856,8 @@ public class MainFrame {
 	    myTrajectory.setBackground(Color.white);
 	    */
 	    map = new Map();
-	    map.setBounds(0, 0, 1197, 751);
-	    
+	    //map.setBounds(0, 0, 1197, 751);
+	    map.setBounds(0, 0, 1047, 648);
 //		manageTrajectory trajectoryManagementThread = new manageTrajectory();
 //		Thread t = new Thread(trajectoryManagementThread);
 //		t.start();
@@ -768,7 +868,7 @@ public class MainFrame {
 		frame.getContentPane().add(btnConnectToVehicle);
 		frame.getContentPane().add(lblConnected);
 		frame.getContentPane().add(btnKeyControl);
-		frame.getContentPane().add(slider);
+		frame.getContentPane().add(speedSlider);
 		frame.getContentPane().add(btnCenter);
 		frame.getContentPane().add(lblMultiThreadResults);
 		frame.getContentPane().add(vehicle);
@@ -827,7 +927,7 @@ public class MainFrame {
 				vehicle.repaint();//This works as long as Vehicle is above it
 			}
 		});
-		btnRotateImageTest.setBounds(1280, 448, 140, 35);
+		btnRotateImageTest.setBounds(1280, 290, 140, 35);
 		frame.getContentPane().add(btnRotateImageTest);
 		
 		JButton btnMoveCarTest = new JButton("Move Car Test");
@@ -840,7 +940,7 @@ public class MainFrame {
 				t.start();
 			}
 		});
-		btnMoveCarTest.setBounds(1225, 403, 117, 35);
+		btnMoveCarTest.setBounds(1214, 245, 117, 35);
 		frame.getContentPane().add(btnMoveCarTest);
 		
 		JButton btnLinkeddequeTest = new JButton("LinkedDeque Test");
@@ -851,7 +951,7 @@ public class MainFrame {
 				deque.demo();
 			}
 		});
-		btnLinkeddequeTest.setBounds(1280, 358, 140, 35);
+		btnLinkeddequeTest.setBounds(1165, 190, 140, 35);
 		frame.getContentPane().add(btnLinkeddequeTest);
 		
 		JButton btnStopMovingCar = new JButton("Stop Moving Car");
@@ -861,7 +961,7 @@ public class MainFrame {
 				keepMovingCar = false;
 			}
 		});
-		btnStopMovingCar.setBounds(1357, 403, 117, 35);
+		btnStopMovingCar.setBounds(1352, 245, 117, 35);
 		frame.getContentPane().add(btnStopMovingCar);
 		
 		btnTrajectoryTest.addMouseListener(new MouseAdapter() {
@@ -878,10 +978,14 @@ public class MainFrame {
 //				t.start();
 			}
 		});
-		btnTrajectoryTest.setBounds(1280, 313, 140, 35);
+		btnTrajectoryTest.setBounds(1261, 145, 140, 35);
 		frame.getContentPane().add(btnTrajectoryTest);
 		
 		JButton btnRunPythonScripts = new JButton("Run Python Scripts");
+		btnRunPythonScripts.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+			}
+		});
 		btnRunPythonScripts.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent arg0) {
@@ -890,8 +994,492 @@ public class MainFrame {
 				deque.demo();
 			}
 		});
-		btnRunPythonScripts.setBounds(1280, 268, 140, 35);
+		btnRunPythonScripts.setBounds(1261, 100, 140, 35);
 		frame.getContentPane().add(btnRunPythonScripts);
+		
+		
+		JLabel lblSuccessfailure = new JLabel("Success/Failure");
+		lblSuccessfailure.setOpaque(true);
+		lblSuccessfailure.setHorizontalAlignment(SwingConstants.CENTER);
+		lblSuccessfailure.setFont(new Font("Tahoma", Font.BOLD, 10));
+		lblSuccessfailure.setBorder(BorderFactory.createLineBorder(Color.BLACK, 1, true));
+		lblSuccessfailure.setBackground(Color.LIGHT_GRAY);
+		lblSuccessfailure.setBounds(1318, 55, 156, 35);
+		frame.getContentPane().add(lblSuccessfailure);
+		
+		
+		//JLabel lblLinkedDequeResults = new JLabel("Linked Deque Results");
+		lblLinkedDequeResults.setOpaque(true);
+		lblLinkedDequeResults.setHorizontalAlignment(SwingConstants.CENTER);
+		lblLinkedDequeResults.setFont(new Font("Tahoma", Font.BOLD, 10));
+		lblLinkedDequeResults.setBorder(BorderFactory.createLineBorder(Color.BLACK, 1, true));
+		lblLinkedDequeResults.setBackground(Color.LIGHT_GRAY);
+		lblLinkedDequeResults.setBounds(1318, 190, 156, 35);
+		frame.getContentPane().add(lblLinkedDequeResults);
+		
+		JButton btnTestPythonForLinuxEnvironment = new JButton("Test Python for Linux Environment");
+		btnTestPythonForLinuxEnvironment.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent arg0) {
+				if (OSName.equalsIgnoreCase("Windows 10")) {
+					runPrintOne = "python E:\\Workstation\\eclipse-workspace\\AutoVehicleGUI\\AutoVehicle\\src\\printOne.py";
+//					runPrintOne = "python printOne.py";	
+				}
+				else
+					runPrintOne = "python printOne.py";
+				
+				System.out.println(OSName);
+//				
+				System.out.println("printOne.py is in...");
+				System.out.println(System.getProperty("user.dir"));
+				try {
+					Process p = Runtime.getRuntime().exec(runPrintOne);
+					BufferedReader IMUOutput = new BufferedReader(new InputStreamReader(p.getInputStream()));
+					String line = IMUOutput.readLine();
+					System.out.println(line);
+					String expectedOutput = "1";
+					System.out.println(expectedOutput);
+					
+					if(line.equals("1"))
+						lblSuccessfailure.setText("Success");
+					else
+						lblSuccessfailure.setText("Failure");
+				}
+				catch(IOException e1) {
+					e1.printStackTrace();
+				} 
+
+			}
+		});
+		btnTestPythonForLinuxEnvironment.setBounds(1115, 55, 189, 35);
+		frame.getContentPane().add(btnTestPythonForLinuxEnvironment);
+		
+		JButton btnTestLocalSocket = new JButton("Test Local Socket to Python");
+		btnTestLocalSocket.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+			}
+		});
+		btnTestLocalSocket.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent arg0) {
+				SocketServer backEndSocket = new SocketServer();
+				try {
+//					backEndSocket.connect();
+					backEndSocket.connectAttempt2();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		});
+		btnTestLocalSocket.setBounds(1261, 10, 189, 35);
+		frame.getContentPane().add(btnTestLocalSocket);
+		
+		JButton btnNewVehicleManual = new JButton("New Vehicle Manual Control");
+		btnNewVehicleManual.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+			}
+		});
+		btnNewVehicleManual.addKeyListener(new KeyAdapter() {
+			@Override
+			public void keyPressed(KeyEvent arg0) {
+//				Format for the commands:
+//				F/R Space Speed_1 Speed_2 Speed_3 Space F/R Space Speed_1 Speed_2 Speed_3
+			
+//				Formula to change degrees / second to speed of motor 0 - 100
+//				x (degrees / 1 second) * (2 * pi * r1 / 360 degrees) * (1 tire revolution / 2 * pi * tireRadius) * (60 sec / 1 min) * 100/165
+//				leftWheelSpeed = degreesPerSecond * (r1 / 360) * (1 / tireRadius) * (60) * 100 / fullSpeedRPM;
+				int keyCode = arg0.getKeyCode();
+				double degreesPerSecond = degreesPerSecondSlider.getValue();
+
+				String speed = Integer.toString(speedSlider.getValue());
+
+				if(speed.length() == 1)
+					speed = "00" + speed;
+				if(speed.length() == 2)
+					speed = "0" + speed;
+				
+				String leftWheelSpeed = speed;
+				String rightWheelSpeed = speed;	
+			
+			
+				String message;
+			
+				if(currentDriveState == "Stop") {
+					if(keyCode == arg0.VK_LEFT) {
+						System.out.println("Drive left");
+						currentDriveState = "L";
+						if(leftWheelSpeed.length() == 1)
+							leftWheelSpeed = "00" + leftWheelSpeed;
+						if(leftWheelSpeed.length() == 2)
+							leftWheelSpeed = "0" + leftWheelSpeed;
+						if(rightWheelSpeed.length() == 1)
+							rightWheelSpeed = "00" + rightWheelSpeed;
+						if(rightWheelSpeed.length() == 2)
+							rightWheelSpeed = "0" + rightWheelSpeed;
+
+						System.out.println("Left wheels: " + leftWheelSpeed);
+						System.out.println("Right wheels: " + rightWheelSpeed);
+						try {
+							client.sendTCPMessage("B " + leftWheelSpeed + " F " + rightWheelSpeed);
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+					if(keyCode == arg0.VK_RIGHT) {
+						System.out.println("Drive right");
+						currentDriveState = "R";
+						if(leftWheelSpeed.length() == 1)
+							leftWheelSpeed = "00" + leftWheelSpeed;
+						if(leftWheelSpeed.length() == 2)
+							leftWheelSpeed = "0" + leftWheelSpeed;
+						if(rightWheelSpeed.length() == 1)
+							rightWheelSpeed = "00" + rightWheelSpeed;
+						if(rightWheelSpeed.length() == 2)
+							rightWheelSpeed = "0" + rightWheelSpeed;
+
+						System.out.println("Left wheels: " + leftWheelSpeed);
+						System.out.println("Right wheels: " + rightWheelSpeed);
+						try {
+							client.sendTCPMessage("F " + leftWheelSpeed + " B " + rightWheelSpeed);
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+					if(keyCode == arg0.VK_UP) {
+						System.out.println("Drive forward");
+						currentDriveState = "F";
+						if(leftWheelSpeed.length() == 1)
+							leftWheelSpeed = "00" + leftWheelSpeed;
+						if(leftWheelSpeed.length() == 2)
+							leftWheelSpeed = "0" + leftWheelSpeed;
+						if(rightWheelSpeed.length() == 1)
+							rightWheelSpeed = "00" + rightWheelSpeed;
+						if(rightWheelSpeed.length() == 2)
+							rightWheelSpeed = "0" + rightWheelSpeed;
+
+						System.out.println("Left wheels: " + leftWheelSpeed);
+						System.out.println("Right wheels: " + rightWheelSpeed);
+						try {
+							client.sendTCPMessage("F " + leftWheelSpeed + " F " + rightWheelSpeed);
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+					if(keyCode == arg0.VK_DOWN) {
+						System.out.println("Drive backward");
+						currentDriveState = "B";
+						if(leftWheelSpeed.length() == 1)
+							leftWheelSpeed = "00" + leftWheelSpeed;
+						if(leftWheelSpeed.length() == 2)
+							leftWheelSpeed = "0" + leftWheelSpeed;
+						if(rightWheelSpeed.length() == 1)
+							rightWheelSpeed = "00" + rightWheelSpeed;
+						if(rightWheelSpeed.length() == 2)
+							rightWheelSpeed = "0" + rightWheelSpeed;
+
+						System.out.println("Left wheels: " + leftWheelSpeed);
+						System.out.println("Right wheels: " + rightWheelSpeed);
+						try {
+							client.sendTCPMessage("B " + leftWheelSpeed + " B " + rightWheelSpeed);
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+				}
+				if(currentDriveState == "F") {
+					if(keyCode == arg0.VK_LEFT) {
+						System.out.println("Drive forward and left");
+						currentDriveState = "FL";
+						leftWheelSpeed =  Integer.toString((int)(degreesPerSecond * (r1 / 360) * (1 / tireRadius) * 60 * 100 / 165 + 0.5));
+						rightWheelSpeed = Integer.toString((int)(degreesPerSecond * (r2 / 360) * (1 / tireRadius) * 60 * 100 / 165 + 0.5));
+						if(leftWheelSpeed.length() == 1)
+							leftWheelSpeed = "00" + leftWheelSpeed;
+						if(leftWheelSpeed.length() == 2)
+							leftWheelSpeed = "0" + leftWheelSpeed;
+						if(rightWheelSpeed.length() == 1)
+							rightWheelSpeed = "00" + rightWheelSpeed;
+						if(rightWheelSpeed.length() == 2)
+							rightWheelSpeed = "0" + rightWheelSpeed;
+
+						System.out.println("Left wheels: " + leftWheelSpeed);
+						System.out.println("Right wheels: " + rightWheelSpeed);
+						try {
+							client.sendTCPMessage("F " + leftWheelSpeed + " F " + rightWheelSpeed);
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+					if(keyCode == arg0.VK_RIGHT) {
+						System.out.println("Drive forward and right");
+						currentDriveState = "FR";
+						leftWheelSpeed =  Integer.toString((int)(degreesPerSecond * (r2 / 360) * (1 / tireRadius) * 60 * 100 / 165 + 0.5));
+						rightWheelSpeed = Integer.toString((int)(degreesPerSecond * (r1 / 360) * (1 / tireRadius) * 60 * 100 / 165 + 0.5));
+						if(leftWheelSpeed.length() == 1)
+							leftWheelSpeed = "00" + leftWheelSpeed;
+						if(leftWheelSpeed.length() == 2)
+							leftWheelSpeed = "0" + leftWheelSpeed;
+						if(rightWheelSpeed.length() == 1)
+							rightWheelSpeed = "00" + rightWheelSpeed;
+						if(rightWheelSpeed.length() == 2)
+							rightWheelSpeed = "0" + rightWheelSpeed;
+
+						System.out.println("Left wheels: " + leftWheelSpeed);
+						System.out.println("Right wheels: " + rightWheelSpeed);
+						try {
+							client.sendTCPMessage("F " + leftWheelSpeed + " F " + rightWheelSpeed);
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+				}
+				if(currentDriveState == "B") {
+					if(keyCode == arg0.VK_LEFT) {
+						System.out.println("Drive backward and left");
+						currentDriveState = "BL";
+						leftWheelSpeed =  Integer.toString((int)(degreesPerSecond * (r1 / 360) * (1 / tireRadius) * 60 * 100 / 165 + 0.5));
+						rightWheelSpeed = Integer.toString((int)(degreesPerSecond * (r2 / 360) * (1 / tireRadius) * 60 * 100 / 165 + 0.5));
+						if(leftWheelSpeed.length() == 1)
+							leftWheelSpeed = "00" + leftWheelSpeed;
+						if(leftWheelSpeed.length() == 2)
+							leftWheelSpeed = "0" + leftWheelSpeed;
+						if(rightWheelSpeed.length() == 1)
+							rightWheelSpeed = "00" + rightWheelSpeed;
+						if(rightWheelSpeed.length() == 2)
+							rightWheelSpeed = "0" + rightWheelSpeed;
+
+						System.out.println("Left wheels: " + leftWheelSpeed);
+						System.out.println("Right wheels: " + rightWheelSpeed);
+						try {
+							client.sendTCPMessage("B " + leftWheelSpeed + " B " + rightWheelSpeed);
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+					if(keyCode == arg0.VK_RIGHT) {
+						System.out.println("Drive backward and right");
+						currentDriveState = "BR";
+						leftWheelSpeed =  Integer.toString((int)(degreesPerSecond * (r2 / 360) * (1 / tireRadius) * 60 * 100 / 165 + 0.5));
+						rightWheelSpeed = Integer.toString((int)(degreesPerSecond * (r1 / 360) * (1 / tireRadius) * 60 * 100 / 165 + 0.5));
+						if(leftWheelSpeed.length() == 1)
+							leftWheelSpeed = "00" + leftWheelSpeed;
+						if(leftWheelSpeed.length() == 2)
+							leftWheelSpeed = "0" + leftWheelSpeed;
+						if(rightWheelSpeed.length() == 1)
+							rightWheelSpeed = "00" + rightWheelSpeed;
+						if(rightWheelSpeed.length() == 2)
+							rightWheelSpeed = "0" + rightWheelSpeed;
+
+						System.out.println("Left wheels: " + leftWheelSpeed);
+						System.out.println("Right wheels: " + rightWheelSpeed);
+						try {
+							client.sendTCPMessage("B " + leftWheelSpeed + " B " + rightWheelSpeed);
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}				
+				}
+				if(currentDriveState == "L") {
+					if(keyCode == arg0.VK_UP) {
+						System.out.println("Drive forward and left");
+						currentDriveState = "FL";
+						leftWheelSpeed =  Integer.toString((int)(degreesPerSecond * (r1 / 360) * (1 / tireRadius) * 60 * 100 / 165 + 0.5));
+						rightWheelSpeed = Integer.toString((int)(degreesPerSecond * (r2 / 360) * (1 / tireRadius) * 60 * 100 / 165 + 0.5));
+						if(leftWheelSpeed.length() == 1)
+							leftWheelSpeed = "00" + leftWheelSpeed;
+						if(leftWheelSpeed.length() == 2)
+							leftWheelSpeed = "0" + leftWheelSpeed;
+						if(rightWheelSpeed.length() == 1)
+							rightWheelSpeed = "00" + rightWheelSpeed;
+						if(rightWheelSpeed.length() == 2)
+							rightWheelSpeed = "0" + rightWheelSpeed;
+
+						System.out.println("Left wheels: " + leftWheelSpeed);
+						System.out.println("Right wheels: " + rightWheelSpeed);
+						try {
+							client.sendTCPMessage("F " + leftWheelSpeed + " F " + rightWheelSpeed);
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+					if(keyCode == arg0.VK_DOWN) {
+						System.out.println("Drive backward and left");
+						currentDriveState = "BL";
+						leftWheelSpeed =  Integer.toString((int)(degreesPerSecond * (r1 / 360) * (1 / tireRadius) * 60 * 100 / 165 + 0.5));
+						rightWheelSpeed = Integer.toString((int)(degreesPerSecond * (r2 / 360) * (1 / tireRadius) * 60 * 100 / 165 + 0.5));
+						System.out.println("Left wheels: " + leftWheelSpeed);
+						System.out.println("Right wheels: " + rightWheelSpeed);
+						if(leftWheelSpeed.length() == 1)
+							leftWheelSpeed = "00" + leftWheelSpeed;
+						if(leftWheelSpeed.length() == 2)
+							leftWheelSpeed = "0" + leftWheelSpeed;
+						if(rightWheelSpeed.length() == 1)
+							rightWheelSpeed = "00" + rightWheelSpeed;
+						if(rightWheelSpeed.length() == 2)
+							rightWheelSpeed = "0" + rightWheelSpeed;
+
+						try {
+							client.sendTCPMessage("B " + leftWheelSpeed + " B " + rightWheelSpeed);
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}				
+				}	
+				if(currentDriveState == "R") {
+					if(keyCode == arg0.VK_UP) {
+						System.out.println("Drive forward and right");
+						currentDriveState = "FR";
+						leftWheelSpeed =  Integer.toString((int)(degreesPerSecond * (r2 / 360) * (1 / tireRadius) * 60 * 100 / 165 + 0.5));
+						rightWheelSpeed = Integer.toString((int)(degreesPerSecond * (r1 / 360) * (1 / tireRadius) * 60 * 100 / 165 + 0.5));
+						System.out.println("Left wheels: " + leftWheelSpeed);
+						System.out.println("Right wheels: " + rightWheelSpeed);
+						if(leftWheelSpeed.length() == 1)
+							leftWheelSpeed = "00" + leftWheelSpeed;
+						if(leftWheelSpeed.length() == 2)
+							leftWheelSpeed = "0" + leftWheelSpeed;
+						if(rightWheelSpeed.length() == 1)
+							rightWheelSpeed = "00" + rightWheelSpeed;
+						if(rightWheelSpeed.length() == 2)
+							rightWheelSpeed = "0" + rightWheelSpeed;
+
+						try {
+							client.sendTCPMessage("F " + leftWheelSpeed + " F " + rightWheelSpeed);
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+					if(keyCode == arg0.VK_DOWN) {
+						System.out.println("Drive backward and right");
+						currentDriveState = "BR";
+						leftWheelSpeed =  Integer.toString((int)(degreesPerSecond * (r2 / 360) * (1 / tireRadius) * 60 * 100 / 165 + 0.5));
+						rightWheelSpeed = Integer.toString((int)(degreesPerSecond * (r1 / 360) * (1 / tireRadius) * 60 * 100 / 165 + 0.5));
+						
+						if(leftWheelSpeed.length() == 1)
+							leftWheelSpeed = "00" + leftWheelSpeed;
+						if(leftWheelSpeed.length() == 2)
+							leftWheelSpeed = "0" + leftWheelSpeed;
+						if(rightWheelSpeed.length() == 1)
+							rightWheelSpeed = "00" + rightWheelSpeed;
+						if(rightWheelSpeed.length() == 2)
+							rightWheelSpeed = "0" + rightWheelSpeed;
+
+						System.out.println("Left wheels: " + leftWheelSpeed);
+						System.out.println("Right wheels: " + rightWheelSpeed);
+						try {
+							client.sendTCPMessage("B " + leftWheelSpeed + " B " + rightWheelSpeed);
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}			
+				}	
+			}
+			@Override
+			public void keyReleased(KeyEvent e) {
+				int keyCode = e.getKeyCode();
+				String speed = Integer.toString(speedSlider.getValue());
+				String leftWheelSpeed = speed;
+				String rightWheelSpeed = speed;	
+
+				if(speed.length() == 1)
+					speed = "00" + speed;
+				if(speed.length() == 2)
+					speed = "0" + speed;
+				
+				if(currentDriveState == "F" && keyCode == e.VK_UP) {
+					System.out.println("Stop");
+					currentDriveState = "Stop";
+	
+				}
+				if(currentDriveState == "B" && keyCode == e.VK_DOWN) {
+					System.out.println("Stop");
+					currentDriveState = "Stop";
+		
+				}
+				if(currentDriveState == "R" && keyCode == e.VK_RIGHT) {
+					System.out.println("Stop");
+					currentDriveState = "Stop";
+					
+				}
+				if(currentDriveState == "L" && keyCode == e.VK_LEFT) {
+					System.out.println("Stop");
+					currentDriveState = "Stop";
+					
+				}
+				
+				if(currentDriveState == "FL") {
+					if(keyCode == e.VK_LEFT) {
+						System.out.println("Drive forward");
+						currentDriveState = "F";
+						
+
+					}
+					if(keyCode == e.VK_UP) {
+						System.out.println("Drive left");
+						currentDriveState = "L";
+						
+
+					}
+				}
+				if(currentDriveState == "FR") {
+					if(keyCode == e.VK_RIGHT) {
+						System.out.println("Drive forward");
+						currentDriveState = "F";
+						
+					}
+					if(keyCode == e.VK_UP) {
+						System.out.println("Drive right");
+						currentDriveState = "R";
+						
+					}
+				}
+				if(currentDriveState == "BL") {
+					if(keyCode == e.VK_LEFT) {
+						System.out.println("Drive backward");
+						currentDriveState = "B";
+						
+					}
+					if(keyCode == e.VK_DOWN) {
+						System.out.println("Drive left");
+						currentDriveState = "L";
+					}
+				}
+				if(currentDriveState == "BR") {
+					if(keyCode == e.VK_RIGHT) {
+						System.out.println("Drive backward");
+						currentDriveState = "B";
+						
+					}
+					if(keyCode == e.VK_DOWN) {
+						System.out.println("Drive right");
+						currentDriveState = "R";
+						
+					}
+				}
+			}
+		});
+		btnNewVehicleManual.setBounds(1084, 489, 223, 49);
+		frame.getContentPane().add(btnNewVehicleManual);
+		
+		JLabel lblDegreesPerSecond = new JLabel("Degrees Per Second");
+		lblDegreesPerSecond.setBounds(1217, 598, 107, 35);
+		frame.getContentPane().add(lblDegreesPerSecond);
+		
+		JLabel lblSpeed = new JLabel("Speed");
+		lblSpeed.setBounds(1084, 598, 107, 35);
+		frame.getContentPane().add(lblSpeed);
+
 	}
 
 	private InputMap getInputMap(int condition) {

@@ -13,16 +13,20 @@ public class Vehicle extends JPanel {
 	BufferedImage carImage;
 	private double thetaRadians;
 	private double thetaDegreesRotatedFromBeginning = 90;
+	protected String OSName = System.getProperty("os.name");
 	
 	public Vehicle() {
 		super();
 		try {
-			carImage = ImageIO.read(new File("E:\\Workstation\\eclipse-workspace\\AutoVehicleGUI\\AutoVehicle\\img\\vehicle_v2_right.jpg"));
-//			int height = carImage.getHeight();
+			if (OSName.equalsIgnoreCase("Windows 10"))
+				carImage = ImageIO.read(new File("E:\\Workstation\\eclipse-workspace\\AutoVehicleGUI\\AutoVehicle\\img\\vehicle_v2_right.jpg"));
+			else
+				carImage = ImageIO.read(new File("/home/workstation/Pictures/autovehicle/vehicle_v2_right.jpg"));
+			//			int height = carImage.getHeight();
 //			int width = carImage.getWidth();
 //			System.out.println(height);
 //			System.out.println(width);
-			//carImage = ImageIO.read(new File("img/vehicle_v3.jpg"));
+			//carImage = ImageIO.read(new File("/home/workstation/Pictures/autovehicle/vehicle_v3.jpg"));
 			//carImage = ImageIO.read(new File("E:\\Workstation\\eclipse-workspace\\AutoVehicleGUI\\AutoVehicle\\img\\rsz_vehicle.jpg"));
 			//carImage = ImageIO.read(new File(fileLocation));
 		} catch (IOException e) {
