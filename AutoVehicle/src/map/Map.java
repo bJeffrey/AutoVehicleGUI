@@ -17,6 +17,10 @@ public class Map extends JPanel{
 	private Vehicle vehicle = new Vehicle();
 	private Trajectory trajectory = new Trajectory();
 	protected String OSName = System.getProperty("os.name");
+	private int scaledMapWidth = 710;
+	private int scaledMapHeight = 770;
+	private int shiftedMapWidth = 250;
+	private int shiftedMapHeight = 105;
 	
 	
 	public Map(){
@@ -57,6 +61,22 @@ public class Map extends JPanel{
 	
 	public void setVehicleTheta(double thetaHeadingInDegrees) {
 		vehicle.setTheta(thetaHeadingInDegrees);
+	}
+	
+	public int getScaledMapWidth() {
+		return scaledMapWidth;
+	}
+	
+	public int getScaledMapHeight() {
+		return scaledMapHeight;
+	}
+	
+	public int getShiftedMapWidth() {
+		return shiftedMapWidth;
+	}
+	
+	public int getShiftedMapHeight() {
+		return shiftedMapHeight;
 	}
 	
 	public int getVehicleX() {

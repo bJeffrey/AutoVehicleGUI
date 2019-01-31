@@ -89,6 +89,9 @@ public class MainFrame {
 	protected Thread backEndThread = new Thread(serverSock);//thread to run the back-end Coordinator
 	protected Socket backEndClient = null;
 	protected boolean connectedToBackEnd = false;
+	protected Process backEndProcess;//process to run the backend coordinator with tcp localhost
+	protected boolean clearIMUData = false;//allows the "Clear IMU" command to be sent to the backend
+	
 	
 
 	/**
@@ -448,9 +451,13 @@ public class MainFrame {
 		}
 	}	
 	
+	
+	
 	class DriveCar implements Runnable {
 		private int xCurrent;
 		private int yCurrent;
+		
+		
 		
 		public void run() {
 			int count = 0;
@@ -534,14 +541,14 @@ public class MainFrame {
 	
 	class ServerSock implements Runnable{
 		//static ServerSocket variable
-		private int port = 9873;
+		private int port = 9875;
 		private ServerSocket server = null;
 		//socket server port on which it will listen
 		BufferedReader in = null;//input stream from client
 		PrintWriter out = null;//output stream to client
+		int xCurrent, yCurrent, heading;//current x and y coordinates of the vehicle
 		
-		
-		boolean run = true;
+		boolean keepRunningBackEnd = true;
 		String fromClient = null;
 		String toClient;
 		
@@ -589,27 +596,48 @@ public class MainFrame {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			
-			
 		}
-		public void sendBackEndMessage(String message) {
-			out.println(message);
-		}
-		public String receiveBackEndMessage() {
+		
+		public void updatePosition() {
+			vehicle.setTheta(heading);
+
+			EventQueue.invokeLater(new Runnable() {
+
+				public void run() {
+
+					
+					vehicle.setBounds(xCurrent, yCurrent, 70, 70);
+					vehicle.repaint();
+				}
+			});
+		
 			try {
-				//read a message from the client
-				fromClient = in.readLine();
-			} catch (IOException e) {
+				Thread.sleep(60);
+			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			return fromClient;
-		}
 
+			
+		}
+		
+		public void interpretMessage() {
+			String[] splitMessage = fromClient.split(":");
+			
+			if(splitMessage[0].equals("position")) {
+				xCurrent = Integer.parseInt(splitMessage[1]);
+				yCurrent = Integer.parseInt(splitMessage[2]);
+				heading = Integer.parseInt(splitMessage[3]);
+				xCurrent = map.getWidth() * xCurrent / map.getScaledMapWidth() + map.getShiftedMapWidth();
+				yCurrent = map.getHeight() * yCurrent / map.getScaledMapHeight() + map.getShiftedMapHeight();
+				updatePosition();
+			}
+		}
+		
 		public void run(){
 			connect();
 	     
-			while(run) {
+			while(keepRunningBackEnd) {
 
 				try {
 					//read a message from the client
@@ -621,11 +649,19 @@ public class MainFrame {
 				System.out.println("received: " + fromClient);            
 				String msg = "got it";
 				
+				interpretMessage();//interpret the message sent from the back-end
+				
+				if(clearIMUData == true) {
+					out.println("Clear IMU");
+					clearIMUData = false;
+				}
+				
+				
 				//send a message to the client
 				out.println(msg);//Send string to client	
 
 				if(fromClient.equals("exit")) {
-					run = false;
+					keepRunningBackEnd = false;
 				}
 	         
 			}			
@@ -728,11 +764,13 @@ public class MainFrame {
 		        else {
 		        	System.out.println("Exiting...");
 		        }
+		    	System.out.println("connectedToBackEnd: " + connectedToBackEnd);
 		    	if(connectedToBackEnd == true) {
 		    		System.out.println("Closing back-end socket");
 		    		try {
 						backEndClient.close();
 					} catch (IOException e) {
+						System.out.println("Failed to close back-end socket");
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
@@ -980,6 +1018,7 @@ public class MainFrame {
 	    map = new Map();
 	    //map.setBounds(0, 0, 1197, 751);
 	    map.setBounds(0, 0, 1047, 648);
+	    
 //		manageTrajectory trajectoryManagementThread = new manageTrajectory();
 //		Thread t = new Thread(trajectoryManagementThread);
 //		t.start();
@@ -1188,6 +1227,22 @@ public class MainFrame {
 		btnTestLocalSocket.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent arg0) {
+				
+				runCoordinator = "python client.py";
+				if (OSName.equalsIgnoreCase("Windows 10")) {
+					runCoordinator = "python E:\\Workstation\\eclipse-workspace\\AutoVehicleGUI\\AutoVehicle\\src\\client.py";
+				}
+				else
+					runCoordinator = "python client.py";
+
+				
+				try {
+					backEndProcess = Runtime.getRuntime().exec(runCoordinator);
+				} catch (IOException e) {
+					System.out.println("Failed to created back-end process");
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 				backEndThread.start();
 
 				
@@ -1817,6 +1872,16 @@ public class MainFrame {
 		JLabel lblSpeed = new JLabel("Speed");
 		lblSpeed.setBounds(1084, 598, 107, 35);
 		frame.getContentPane().add(lblSpeed);
+		
+		JButton btnClearImu = new JButton("Clear IMU");
+		btnClearImu.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				clearIMUData = true;
+			}
+		});
+		btnClearImu.setBounds(1091, 10, 140, 35);
+		frame.getContentPane().add(btnClearImu);
 
 	}
 
