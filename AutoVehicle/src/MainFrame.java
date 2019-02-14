@@ -53,7 +53,8 @@ import serverSocket.SocketServer;
 public class MainFrame {
 
 	private JFrame frame;
-	protected TCPClient vehicleTCPClient;
+	protected TCPClient vehicleTCPClient;//vehicle directional commands
+	protected TCPClient backEndTCPClient;//client to receive messages from the back end
 	protected boolean connected;
 	protected String lastCommandSent; //last command sent to the vehicle
 	protected String currentDriveState = "Stop"; //keeps track of the 8 possible drive states
@@ -86,7 +87,9 @@ public class MainFrame {
 	protected String runGenerateCirclingCoordinates;
 	protected String runCoordinator;
 	protected ServerSock serverSock = new ServerSock();//connects to the back-end Coordinator
-	protected Thread backEndThread = new Thread(serverSock);//thread to run the back-end Coordinator
+	protected Thread backEndServerThread = new Thread(serverSock);//thread to run the back-end Coordinator
+	protected ClientSock clientSock = new ClientSock();//connects to the back-end coordinator as the client
+	protected Thread backEndClientThread = new Thread(clientSock);//thread to connect to the backend coordinator as a client
 	protected Socket backEndClient = null;
 	protected boolean connectedToBackEnd = false;
 	protected Process backEndProcess;//process to run the backend coordinator with tcp localhost
@@ -539,6 +542,24 @@ public class MainFrame {
 		}
 	}
 	
+	class ClientSock implements Runnable{
+		
+		public void run() {
+			System.out.println("In the Java client to-backend Python server thread");
+			String message = "Hello from the client";
+			
+			while(true) {
+				try {
+					backEndTCPClient.sendTCPMessage(message);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			
+		}
+	}
+	
 	class ServerSock implements Runnable{
 		//static ServerSocket variable
 		private int port = 9875;
@@ -785,6 +806,13 @@ public class MainFrame {
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
+		}
+		
+		try {
+			backEndTCPClient = new TCPClient();
+		} catch (IOException e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
 		}
 		
 		
@@ -1228,12 +1256,12 @@ public class MainFrame {
 			@Override
 			public void mouseClicked(MouseEvent arg0) {
 				
-				runCoordinator = "python client.py";
+				runCoordinator = "python combiner.py";
 				if (OSName.equalsIgnoreCase("Windows 10")) {
-					runCoordinator = "python E:\\Workstation\\eclipse-workspace\\AutoVehicleGUI\\AutoVehicle\\src\\client.py";
+					runCoordinator = "python E:\\Workstation\\eclipse-workspace\\AutoVehicleGUI\\AutoVehicle\\src\\combiner.py";
 				}
 				else
-					runCoordinator = "python client.py";
+					runCoordinator = "python combiner.py";
 
 				
 				try {
@@ -1243,7 +1271,15 @@ public class MainFrame {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-				backEndThread.start();
+				backEndServerThread.start();
+				backEndClientThread.start();
+				
+				try {
+					backEndTCPClient.connect("localhost", 21564);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 
 				
 //				SocketServer backEndSocket = new SocketServer();
@@ -1874,6 +1910,10 @@ public class MainFrame {
 		frame.getContentPane().add(lblSpeed);
 		
 		JButton btnClearImu = new JButton("Clear IMU");
+		btnClearImu.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+			}
+		});
 		btnClearImu.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
