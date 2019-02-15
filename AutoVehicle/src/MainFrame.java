@@ -38,8 +38,9 @@ import javax.swing.event.ChangeListener;
 //import ConcurrentLinkedDequeDemo.*;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
-
+import java.util.Set;
 import java.awt.Image;
 import java.awt.event.KeyEvent;
 import javax.swing.event.ChangeEvent;
@@ -94,6 +95,7 @@ public class MainFrame {
 	protected boolean connectedToBackEnd = false;
 	protected Process backEndProcess;//process to run the backend coordinator with tcp localhost
 	protected boolean clearIMUData = false;//allows the "Clear IMU" command to be sent to the backend
+	private final Set<Integer> pressed = new HashSet<Integer>();
 	
 	
 
@@ -545,13 +547,26 @@ public class MainFrame {
 	class ClientSock implements Runnable{
 		
 		public void run() {
-			System.out.println("In the Java client to-backend Python server thread");
+			try {
+				System.out.println("Attempting to connect to server on port 21564");
+				backEndTCPClient.connect("localhost", 21564);
+				System.out.println("Server accepted connection on port 21564");
+			} catch (IOException e) {
+				System.out.println("Server did not accept connection");
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+			
 			String message = "Hello from the client";
 			
 			while(true) {
 				try {
+					System.out.println("Attempting to send: " + message);
 					backEndTCPClient.sendTCPMessage(message);
+					System.out.println("Sent message to the server.");
 				} catch (IOException e) {
+					System.out.println("Failed to send message to the server");
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
@@ -937,6 +952,8 @@ public class MainFrame {
 		btnKeyControl.addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyPressed(KeyEvent arg0) {
+				
+
 //				Format for the commands:
 //					F/R Space Speed_1 Speed_2 Speed_3 Space F/R Space Speed_1 Speed_2 Speed_3
 				
@@ -997,6 +1014,8 @@ public class MainFrame {
 			}
 			@Override
 			public void keyReleased(KeyEvent e) {
+
+				
 				int keyCode = e.getKeyCode();
 				if(keyCode == e.VK_LEFT || keyCode == e.VK_RIGHT) {
 					if(lastCommandSent != "home") {
@@ -1256,9 +1275,9 @@ public class MainFrame {
 			@Override
 			public void mouseClicked(MouseEvent arg0) {
 				
-				runCoordinator = "python combiner.py";
+				runCoordinator = "python combiner.py >> combinerLog.txt";
 				if (OSName.equalsIgnoreCase("Windows 10")) {
-					runCoordinator = "python E:\\Workstation\\eclipse-workspace\\AutoVehicleGUI\\AutoVehicle\\src\\combiner.py";
+					runCoordinator = "python E:\\Workstation\\eclipse-workspace\\AutoVehicleGUI\\AutoVehicle\\src\\combiner.py >> E:\\Workstation\\eclipse-workspace\\AutoVehicleGUI\\AutoVehicle\\src\\combinerLog.txt";
 				}
 				else
 					runCoordinator = "python combiner.py";
@@ -1274,12 +1293,15 @@ public class MainFrame {
 				backEndServerThread.start();
 				backEndClientThread.start();
 				
-				try {
-					backEndTCPClient.connect("localhost", 21564);
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+//				try {
+//					System.out.println("Attempting to connect to server on port 21564");
+//					backEndTCPClient.connect("localhost", 21564);
+//					System.out.println("Server accepted connection on port 21564");
+//				} catch (IOException e) {
+//					System.out.println("Server did not accept connection");
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
 
 				
 //				SocketServer backEndSocket = new SocketServer();
@@ -1302,13 +1324,15 @@ public class MainFrame {
 		btnNewVehicleManual.addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyPressed(KeyEvent arg0) {
-//				Format for the commands:
-//				F/R Space Speed_1 Speed_2 Speed_3 Space F/R Space Speed_1 Speed_2 Speed_3
-			
-//				Formula to change degrees / second to speed of motor 0 - 100
-//				x (degrees / 1 second) * (2 * pi * wheelSpeedDifferential / 360 degrees) * (1 tire revolution / 2 * pi * tireRadius) * (60 sec / 1 min) * 100/165
-//				leftWheelSpeed = DEGREESPERSECOND * (wheelSpeedDifferential / 360) * (1 / tireRadius) * (60) * 100 / fullSpeedRPM;
+
 				int keyCode = arg0.getKeyCode();
+				pressed.add(keyCode);
+				System.out.println("Number of keys being pressed: " + pressed.size());
+				
+				if(pressed.contains(arg0.VK_UP))
+					System.out.println("up is being pressed.");
+				
+				
 				wheelSpeedDifferential = turningDegreesSlider.getValue();
 			
 
@@ -1632,7 +1656,12 @@ public class MainFrame {
 			}
 			@Override
 			public void keyReleased(KeyEvent e) {
+				
 				int keyCode = e.getKeyCode();
+				
+				pressed.remove(keyCode);
+				System.out.println("Number of keys being pressed: " + Integer.toString(pressed.size()));
+				
 //				String speed = Integer.toString(speedSlider.getValue());
 				String leftWheelSpeed = Integer.toString(speedSlider.getValue());
 				String rightWheelSpeed = Integer.toString(speedSlider.getValue());

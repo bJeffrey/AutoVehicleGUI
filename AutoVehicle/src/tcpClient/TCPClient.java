@@ -139,10 +139,10 @@ public class TCPClient{
     public void sendTCPMessage(String message) throws IOException{
     	//String sendMessage = message + "\n";
     	//bw.write(sendMessage);
-//    	bw.write(message);
-//    	bw.flush();
-    	dout.writeUTF(message);
-    	dout.flush();
+    	bw.write(message);
+    	bw.flush();
+//    	dout.writeUTF(message);
+//    	dout.flush();
     	//System.out.println("Message sent to the server : "+sendMessage);
     	System.out.println("Message sent to the server : " + message);
     }
