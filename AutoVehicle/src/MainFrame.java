@@ -61,9 +61,9 @@ public class MainFrame {
 	protected String currentDriveState = "Stop"; //keeps track of the 8 possible drive states
 	protected double tireRadius = 0.12954; //tire radius (in meters)
 	protected double fullSpeedRPM = 165;
-	protected int SPEEDSAFETYLIMIT = 55;
+	protected int SPEEDSAFETYLIMIT = 40;
 	protected int DEGREESPERSECONDSAFETYLIMIT = 30;
-	protected int MAXWHEELDIFFERENTIAL = 45;
+	protected int MAXWHEELDIFFERENTIAL = 100 - SPEEDSAFETYLIMIT;
 	protected double DEGREESPERSECOND = 45;
 	protected double vehicleWidth = 0.74;
 //	protected double r2 = wheelSpeedDifferential + vehicleWidth; //outer circle radius for outer wheel
@@ -93,7 +93,8 @@ public class MainFrame {
 	protected Socket backEndClient = null;
 	protected boolean connectedToBackEnd = false;
 	protected Process backEndProcess;//process to run the backend coordinator with tcp localhost
-	protected boolean clearIMUData = false;//allows the "Clear IMU" command to be sent to the backend
+	protected String messageToServer = "";//allows the "Calibrate IMU" command to be sent to the backend
+	protected boolean sendMessageToServer = false;
 	private final Set<Integer> pressed = new HashSet<Integer>();//set of current directional commands
 	
 	
@@ -557,18 +558,23 @@ public class MainFrame {
 			}
 
 			
-			String message = "Hello from the client";
+		
 			
 			while(true) {
-				try {
-					System.out.println("Attempting to send: " + message);
-					backEndTCPClient.sendTCPMessage(message);
-					System.out.println("Sent message to the server.");
-				} catch (IOException e) {
-					System.out.println("Failed to send message to the server");
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+
+				if(sendMessageToServer) {
+					try {
+						System.out.println("Attempting to send " + messageToServer + " to the server...");
+						backEndTCPClient.sendTCPMessage(messageToServer);
+						sendMessageToServer = false;
+						System.out.println("Sent " + messageToServer + " to the server.");
+					} catch (IOException e) {
+						System.out.println("Failed to send " + messageToServer + " to the server.");
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 				}
+
 			}
 			
 		}
@@ -679,6 +685,9 @@ public class MainFrame {
 				yCurrent = map.getHeight() * yCurrent / map.getScaledMapHeight() + map.getShiftedMapHeight();
 				updatePosition();
 			}
+			if(splitMessage[0].equals("trajectory")) {
+				
+			}
 		}
 		
 		public void run(){
@@ -698,10 +707,10 @@ public class MainFrame {
 				
 				interpretMessage();//interpret the message sent from the back-end
 				
-				if(clearIMUData == true) {
-					out.println("Clear IMU");
-					clearIMUData = false;
-				}
+//				if(calibrateIMU == true) {
+//					out.println("Clear IMU");
+//					calibrateIMU = false;
+//				}
 				
 				
 				//send a message to the client
@@ -930,6 +939,11 @@ public class MainFrame {
 		});
 		
 		JSlider turningDegreesSlider = new JSlider();
+		turningDegreesSlider.addChangeListener(new ChangeListener() {
+			public void stateChanged(ChangeEvent arg0) {
+				System.out.println("Setting wheelSpeedDifferential to " + turningDegreesSlider.getValue());
+			}
+		});
 		turningDegreesSlider.setBounds(1213, 566, 111, 22);
 		turningDegreesSlider.setValue(20);
 		frame.getContentPane().add(turningDegreesSlider);
@@ -1219,7 +1233,7 @@ public class MainFrame {
 				deque.demo();
 			}
 		});
-		btnRunPythonScripts.setBounds(1261, 100, 140, 35);
+		btnRunPythonScripts.setBounds(1104, 145, 140, 35);
 		frame.getContentPane().add(btnRunPythonScripts);
 		
 		
@@ -1229,7 +1243,7 @@ public class MainFrame {
 		lblSuccessfailure.setFont(new Font("Tahoma", Font.BOLD, 10));
 		lblSuccessfailure.setBorder(BorderFactory.createLineBorder(Color.BLACK, 1, true));
 		lblSuccessfailure.setBackground(Color.LIGHT_GRAY);
-		lblSuccessfailure.setBounds(1318, 55, 156, 35);
+		lblSuccessfailure.setBounds(1295, 100, 156, 35);
 		frame.getContentPane().add(lblSuccessfailure);
 		
 		
@@ -1276,7 +1290,7 @@ public class MainFrame {
 
 			}
 		});
-		btnTestPythonForLinuxEnvironment.setBounds(1115, 55, 189, 35);
+		btnTestPythonForLinuxEnvironment.setBounds(1096, 100, 189, 35);
 		frame.getContentPane().add(btnTestPythonForLinuxEnvironment);
 		
 		JButton btnTestLocalSocket = new JButton("Test Local Socket to Python");
@@ -1326,7 +1340,7 @@ public class MainFrame {
 //				}
 			}
 		});
-		btnTestLocalSocket.setBounds(1261, 10, 189, 35);
+		btnTestLocalSocket.setBounds(1273, 10, 189, 35);
 		frame.getContentPane().add(btnTestLocalSocket);
 		
 		JButton btnNewVehicleManual = new JButton("New Vehicle Manual Control");
@@ -1559,7 +1573,7 @@ public class MainFrame {
 		lblSpeed.setBounds(1084, 598, 107, 35);
 		frame.getContentPane().add(lblSpeed);
 		
-		JButton btnClearImu = new JButton("Clear IMU");
+		JButton btnClearImu = new JButton("Begin IMU Calibration");
 		btnClearImu.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 			}
@@ -1567,10 +1581,25 @@ public class MainFrame {
 		btnClearImu.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				clearIMUData = true;
+				
+				if(btnClearImu.getText().equals("Begin IMU Calibration")) {
+					System.out.println("Beginning IMU Calibration...");
+					messageToServer = "Calibrate IMU";
+					sendMessageToServer = true;
+					btnClearImu.setText("Finished IMU Calibration");					
+				}
+				else if(btnClearImu.getText().equals("Finished IMU Calibration")) {
+					System.out.println("Finished IMU Calibration");
+					messageToServer = "Finished IMU Calibration";
+					sendMessageToServer = true;
+					btnClearImu.setText("Begin IMU Calibration");
+				}
+				else {
+					System.out.println("Error in conditional statements for btnClearImu");
+				}
 			}
 		});
-		btnClearImu.setBounds(1091, 10, 140, 35);
+		btnClearImu.setBounds(1074, 10, 189, 35);
 		frame.getContentPane().add(btnClearImu);
 
 	}
